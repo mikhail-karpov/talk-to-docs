@@ -1,0 +1,9 @@
+logging:
+  level:
+    com.mikhailkarpov: debug
+
+spring:
+  application:
+    name: docs-service
+  main:
+    banner-mode: off
