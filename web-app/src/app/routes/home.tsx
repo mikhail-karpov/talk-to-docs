@@ -1,11 +1,9 @@
-import { Button } from '@/components/ui/button'
+import { UserCard } from '@/features/auth/components/user-card'
 
-const HomeRoute = () => {
+export default function HomeRoute() {
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <Button onClick={() => console.log('button clicked')}>Click me</Button>
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4">
+      <UserCard />
     </div>
   )
 }
-
-export default HomeRoute
