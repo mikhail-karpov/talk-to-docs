@@ -1,3 +1,7 @@
+app:
+  frontend:
+    url: http://localhost:5173
+
 logging:
   level:
     com.mikhailkarpov: debug
