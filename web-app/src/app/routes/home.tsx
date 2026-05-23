@@ -1,9 +1,7 @@
-import { UserCard } from '@/features/auth/components/user-card'
-
 export default function HomeRoute() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-      <UserCard />
+    <div className="flex flex-1 items-center justify-center p-8">
+      <p className="text-muted-foreground text-sm">Select a document to get started</p>
     </div>
   )
 }

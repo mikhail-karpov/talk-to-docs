@@ -1,16 +1,28 @@
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import { useSidebar } from '@/components/ui/sidebar'
 import { Loader2, LogOut } from 'lucide-react'
 import { useAuth } from '../hooks/use-auth'
 import { useSignOut } from '../hooks/use-sign-out'
 
 export function UserCard() {
+  const { state } = useSidebar()
   const { user } = useAuth()
   const signOut = useSignOut()
 
   if (!user) return null
 
   const initials = `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`.toUpperCase()
+
+  if (state === 'collapsed') {
+    return (
+      <div className="flex justify-center py-2">
+        <Avatar className="size-8 rounded-lg">
+          <AvatarFallback className="rounded-lg text-xs">{initials}</AvatarFallback>
+        </Avatar>
+      </div>
+    )
+  }
 
   return (
     <div className="flex items-center justify-between gap-4">
@@ -31,11 +43,7 @@ export function UserCard() {
         onClick={() => signOut.mutate()}
         disabled={signOut.isPending}
       >
-        {signOut.isPending ? (
-          <Loader2 className="animate-spin" />
-        ) : (
-          <LogOut />
-        )}
+        {signOut.isPending ? <Loader2 className="animate-spin" /> : <LogOut />}
       </Button>
     </div>
   )
