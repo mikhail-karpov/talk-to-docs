@@ -7,7 +7,21 @@ logging:
     com.mikhailkarpov: debug
 
 spring:
+  ai:
+    ollama:
+      chat:
+        model: qwen2.5
+      init:
+        pull-model-strategy: when_missing
   application:
     name: docs-service
   main:
     banner-mode: off
+  task:
+    execution:
+      shutdown:
+        await-termination: true
+        await-termination-period: 30s
+  threads:
+    virtual:
+      enabled: true
