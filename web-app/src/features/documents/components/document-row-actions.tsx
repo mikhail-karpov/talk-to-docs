@@ -11,8 +11,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { useDeleteDocument } from '../hooks/use-delete-document'
-import type { Document } from '../types/document'
+import { useDeleteDocument } from '@/features/documents/hooks/use-delete-document'
+import type { Document } from '@/features/documents/types/document'
 
 interface DocumentRowActionsProps {
   document: Document

@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import type { DocumentStatus } from '../types/document'
+import type { DocumentStatus } from '@/features/documents/types/document'
 
 const statusConfig: Record<DocumentStatus, { label: string; className: string }> = {
   PENDING: {

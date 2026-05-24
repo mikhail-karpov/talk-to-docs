@@ -3,7 +3,7 @@ import { Link, NavLink } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { FullPageLoader } from '@/components/ui/full-page-loader'
-import { useChats } from '../hooks/use-chats'
+import { useChats } from '@/features/chat/hooks/use-chats'
 
 export function ChatList() {
   const { chats, isPending } = useChats()

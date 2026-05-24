@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Loader2, SendHorizonal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { useCreateChat } from '../hooks/use-create-chat'
-import { useAutoResizeTextarea } from '../hooks/use-auto-resize-textarea'
+import { useCreateChat } from '@/features/chat/hooks/use-create-chat'
+import { useAutoResizeTextarea } from '@/features/chat/hooks/use-auto-resize-textarea'
 
 export function CreateChatForm() {
   const [value, setValue] = useState('')

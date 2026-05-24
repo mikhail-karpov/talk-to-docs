@@ -1,5 +1,5 @@
 import { api } from '@/lib/api-client'
-import type { Document } from '../types/document'
+import type { Document } from '@/features/documents/types/document'
 
 export async function getDocuments(): Promise<Document[]> {
   const { data } = await api.get<{ items: Document[] }>('/api/v1/documents')

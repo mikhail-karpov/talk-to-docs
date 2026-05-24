@@ -2,8 +2,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { useSidebar } from '@/components/ui/sidebar'
 import { Loader2, LogOut } from 'lucide-react'
-import { useAuth } from '../hooks/use-auth'
-import { useSignOut } from '../hooks/use-sign-out'
+import { useAuth } from '@/features/auth/hooks/use-auth'
+import { useSignOut } from '@/features/auth/hooks/use-sign-out'
 
 export function UserCard() {
   const { state } = useSidebar()

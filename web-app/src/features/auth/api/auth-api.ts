@@ -1,5 +1,5 @@
 import { api } from '@/lib/api-client'
-import type { SignInRequest, User } from '../types'
+import type { SignInRequest, User } from '@/features/auth/types'
 
 export async function getMe(): Promise<User> {
   const { data } = await api.get<User>('/api/v1/auth/me')

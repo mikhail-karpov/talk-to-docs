@@ -13,7 +13,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { useSignIn } from '../hooks/use-sign-in'
+import { useSignIn } from '@/features/auth/hooks/use-sign-in'
 
 const signInSchema = z.object({
   email: z.email('Enter a valid email address'),

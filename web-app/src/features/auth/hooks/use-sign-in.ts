@@ -1,7 +1,7 @@
 import { isAxiosError } from 'axios'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
-import { signIn } from '../api/auth-api'
+import { signIn } from '@/features/auth/api/auth-api'
 
 export function useSignIn() {
   const queryClient = useQueryClient()

@@ -1,5 +1,5 @@
 import { api } from '@/lib/api-client'
-import type { Chat } from '../types'
+import type { Chat } from '@/features/chat/types'
 
 export async function getChats(): Promise<Chat[]> {
   const { data } = await api.get<{ items: Chat[] }>('/api/v1/chat')

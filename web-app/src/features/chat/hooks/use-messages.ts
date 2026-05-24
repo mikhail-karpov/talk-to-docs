@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
-import { getMessages } from '../api/messages-api'
-import { chatKeys } from '../api/query-keys'
-import type { Message } from '../types'
+import { getMessages } from '@/features/chat/api/messages-api'
+import { chatKeys } from '@/features/chat/api/query-keys'
+import type { Message } from '@/features/chat/types'
 
 export function isAwaitingReply(messages: Message[] | undefined): boolean {
   if (!messages?.length) return false

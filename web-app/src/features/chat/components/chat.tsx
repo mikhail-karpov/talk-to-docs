@@ -1,5 +1,5 @@
-import { useSendMessage } from '../hooks/use-send-message'
-import { useMessages, isAwaitingReply } from '../hooks/use-messages'
+import { useSendMessage } from '@/features/chat/hooks/use-send-message'
+import { useMessages, isAwaitingReply } from '@/features/chat/hooks/use-messages'
 import { FullPageLoader } from '@/components/ui/full-page-loader'
 import { MessageInput } from './message-input'
 import { MessageList } from './message-list'

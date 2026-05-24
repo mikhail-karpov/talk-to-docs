@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils'
-import type { Message } from '../types'
+import type { Message } from '@/features/chat/types'
 
 function formatTime(iso: string) {
   return new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' }).format(

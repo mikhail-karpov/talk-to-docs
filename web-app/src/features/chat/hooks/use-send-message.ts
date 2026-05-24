@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { sendMessage } from '../api/messages-api'
-import { chatKeys } from '../api/query-keys'
-import type { Message } from '../types'
+import { sendMessage } from '@/features/chat/api/messages-api'
+import { chatKeys } from '@/features/chat/api/query-keys'
+import type { Message } from '@/features/chat/types'
 
 export function useSendMessage(conversationId: string) {
   const queryClient = useQueryClient()

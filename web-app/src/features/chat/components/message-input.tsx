@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Loader2, SendHorizonal } from 'lucide-react'
-import { useAutoResizeTextarea } from '../hooks/use-auto-resize-textarea'
+import { useAutoResizeTextarea } from '@/features/chat/hooks/use-auto-resize-textarea'
 
 interface MessageInputProps {
   onSend: (content: string) => void

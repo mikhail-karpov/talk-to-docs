@@ -9,8 +9,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { useDocuments } from '../hooks/use-documents'
-import { formatFileSize } from '../utils/format-file-size'
+import { useDocuments } from '@/features/documents/hooks/use-documents'
+import { formatFileSize } from '@/features/documents/utils/format-file-size'
 import { DocumentStatusBadge } from './document-status-badge'
 import { DocumentRowActions } from './document-row-actions'
 

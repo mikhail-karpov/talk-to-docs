@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
-import { createChat } from '../api/chat-api'
-import { chatKeys } from '../api/query-keys'
+import { createChat } from '@/features/chat/api/chat-api'
+import { chatKeys } from '@/features/chat/api/query-keys'
 
 export function useCreateChat() {
   const queryClient = useQueryClient()

@@ -13,8 +13,8 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { cn } from '@/lib/utils'
-import { formatFileSize } from '../utils/format-file-size'
-import { useUploadDocuments } from '../hooks/use-upload-documents'
+import { formatFileSize } from '@/features/documents/utils/format-file-size'
+import { useUploadDocuments } from '@/features/documents/hooks/use-upload-documents'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 const ALLOWED_EXTENSIONS = ['md', 'txt']

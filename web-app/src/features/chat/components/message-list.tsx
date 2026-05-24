@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef } from 'react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { MessageSquare } from 'lucide-react'
 import { MessageBubble } from './message-bubble'
-import type { Message } from '../types'
+import type { Message } from '@/features/chat/types'
 
 type MessageListProps = {
   messages: Message[]
