@@ -6,6 +6,7 @@ import SignInRoute from './routes/sign-in'
 import ChatsRoute from './routes/chats'
 import NewChatRoute from './routes/new-chat'
 import ChatRoute from './routes/chat'
+import DocumentsRoute from './routes/documents'
 
 export function createRouter() {
   return createBrowserRouter([
@@ -30,6 +31,10 @@ export function createRouter() {
             {
               path: '/chats/:id',
               element: <ChatRoute />,
+            },
+            {
+              path: '/documents',
+              element: <DocumentsRoute />,
             },
           ],
         },

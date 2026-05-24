@@ -1,4 +1,4 @@
-import { BookOpen, MessageSquare } from 'lucide-react'
+import { BookOpen, FileText, MessageSquare } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router'
 import {
   Sidebar,
@@ -20,6 +20,7 @@ import { UserCard } from '@/features/auth/components/user-card'
 export default function AppLayout() {
   const location = useLocation()
   const isChatsActive = location.pathname.startsWith('/chats')
+  const isDocumentsActive = location.pathname.startsWith('/documents')
 
   return (
     <SidebarProvider>
@@ -51,6 +52,14 @@ export default function AppLayout() {
                     <NavLink to="/chats">
                       <MessageSquare />
                       <span>Chats</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isDocumentsActive} tooltip="Documents">
+                    <NavLink to="/documents">
+                      <FileText />
+                      <span>Documents</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
