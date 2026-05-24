@@ -1,0 +1,11 @@
+import { api } from '@/lib/api-client'
+import type { Message } from '../types'
+
+export async function getMessages(conversationId: string): Promise<Message[]> {
+  const { data } = await api.get<{ items: Message[] }>(`/api/v1/chat/${conversationId}/messages`)
+  return data.items
+}
+
+export async function sendMessage(conversationId: string, content: string): Promise<void> {
+  await api.post(`/api/v1/chat/${conversationId}/messages`, { content })
+}

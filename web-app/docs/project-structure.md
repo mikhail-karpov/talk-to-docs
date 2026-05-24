@@ -18,6 +18,7 @@ src
 +-- features          # feature based modules
 |   |
 |   +-- auth                # authentication
+|   +-- chat                # chat
 |
 +-- hooks             # shared hooks used across the entire application
 |

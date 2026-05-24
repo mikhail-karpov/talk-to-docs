@@ -1,9 +1,11 @@
-import { BookOpen } from 'lucide-react'
-import { Outlet } from 'react-router'
+import { BookOpen, MessageSquare } from 'lucide-react'
+import { NavLink, Outlet, useLocation } from 'react-router'
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
@@ -16,6 +18,9 @@ import {
 import { UserCard } from '@/features/auth/components/user-card'
 
 export default function AppLayout() {
+  const location = useLocation()
+  const isChatsActive = location.pathname.startsWith('/chats')
+
   return (
     <SidebarProvider>
       <Sidebar collapsible="icon">
@@ -37,7 +42,22 @@ export default function AppLayout() {
           </div>
         </SidebarHeader>
 
-        <SidebarContent />
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isChatsActive} tooltip="Chats">
+                    <NavLink to="/chats">
+                      <MessageSquare />
+                      <span>Chats</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
 
         <SidebarFooter>
           <UserCard />

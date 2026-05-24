@@ -12,7 +12,11 @@ export const api = axios.create({
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (isAxiosError(error) && error.response?.status === 401 && !error.config?.url?.includes('/auth/')) {
+    if (
+      isAxiosError(error) &&
+      error.response?.status === 401 &&
+      !error.config?.url?.includes('/auth/')
+    ) {
       queryClient.removeQueries({ queryKey: ['auth'] })
       window.location.assign('/sign-in')
     }
