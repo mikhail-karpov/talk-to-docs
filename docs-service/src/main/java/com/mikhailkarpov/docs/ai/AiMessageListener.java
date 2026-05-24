@@ -29,7 +29,7 @@ public class AiMessageListener {
   }
 
   private void reply(ChatMessage message) {
-    aiAssistant.reply(message.getConversationId(), message.getContent())
+    aiAssistant.reply(message.getConversationId(), message.getUserId(), message.getContent())
         .thenApply(reply -> new SendMessageCommand(
             message.getConversationId(),
             message.getUserId(),
