@@ -7,16 +7,14 @@ Built with a Spring Boot backend and a modern web UI, it combines document inges
 and conversational AI.
 
 ## Features
-- Upload .md and .txt documents
-- Automatic chunking & embedding into a vector store
-- Semantic search over your documents 
-- Chat interface powered by AI (via Ollama)
-- Metadata tracking for uploaded files 
+- Upload .md, .txt and .pdf documents
+- Embedding into a vector store (PostgreSQL)
+- Chat interface powered by AI (Ollama)
 
 ## Tech Stack
-Backend: Java 25, Gradle, Spring Boot, Spring AI
-Frontend: Vite
-AI Runtime: Ollama (local LLM)
+- Backend: Java 25, Gradle, Spring Boot, Spring AI
+- Frontend: Typescript, Vite, React
+- Infrastructure: Ollama, PostgreSQL
 
 ## Getting Started
 
@@ -26,29 +24,32 @@ Make sure you have installed:
 - Node.js
 - pnpm
 - Ollama (running locally)
+- Docker Compose
 
+1. Run the Ollama locally
 
-1. Start the Ollama
-2. Run Backend
+2. Start the PostgreSQL container
 
 ```sh
-cd docs-service
+docker compose up -d
+```
+
+3. Run Backend
+
+```sh
+cd ./docs-service
 ./gradlew bootRun
 ```
 
-Backend will be available at 'http://localhost:8080'
-
-3. Run Frontend
+4. Run Frontend
 
 ```sh
-cd web-app
+cd ./web-app
 pnpm install
 pnpm dev
 ```
 
-The frontend will be available at `http://localhost:5173`
-
-Use the following to sign in: 
+Open the browser at `http://localhost:5173` and use the following to sign in: 
 ```
 user@example.com
 password

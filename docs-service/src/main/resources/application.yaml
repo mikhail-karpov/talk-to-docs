@@ -14,6 +14,10 @@ logging:
     com.mikhailkarpov: debug
 
 spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/${POSTGRES_DB:talk_to_docs}
+    username: ${POSTGRES_USER:docs_service}
+    password: ${POSTGRES_PASSWORD:ch4ngeMe_local}
   ai:
     ollama:
       chat:
@@ -22,6 +26,11 @@ spring:
         model: nomic-embed-text
       init:
         pull-model-strategy: when_missing
+    vectorstore:
+      pgvector:
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+        dimensions: 768
   application:
     name: docs-service
   main:
