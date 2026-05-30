@@ -26,6 +26,7 @@ public class DocumentService {
     this.eventPublisher = eventPublisher;
   }
 
+  @Transactional
   public DocumentMetadata uploadDocument(String userId, Resource resource, String contentType) {
 
     try (var inputStream = resource.getInputStream()) {
@@ -62,6 +63,7 @@ public class DocumentService {
     return documentRepository.findDocuments(userId);
   }
 
+  @Transactional
   public void deleteDocument(String userId, String documentId) {
     var document = documentRepository.deleteDocument(userId, documentId)
         .orElseThrow(() -> DocumentNotFoundException.of(documentId));
