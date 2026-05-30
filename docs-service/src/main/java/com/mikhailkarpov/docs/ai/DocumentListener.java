@@ -5,8 +5,8 @@ import com.mikhailkarpov.docs.documents.DocumentDeletedEvent;
 import com.mikhailkarpov.docs.documents.DocumentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Component
 public class DocumentListener {
@@ -20,21 +20,21 @@ public class DocumentListener {
     this.documentService = documentService;
   }
 
-  @EventListener(DocumentCreatedEvent.class)
+  @TransactionalEventListener(value = DocumentCreatedEvent.class)
   void process(DocumentCreatedEvent event) {
 
     var document = event.document();
     var resource = event.resource();
     documentIndexer.add(document, resource)
-        .thenRun(() -> documentService.markProcessed(document.getId(), document.getUserId()))
+        .thenRun(() -> documentService.markProcessed(document.getUserId(), document.getId()))
         .exceptionally(ex -> {
           log.error("Failed to process document {}", document, ex);
-          documentService.markError(document.getId(), document.getUserId());
+          documentService.markError(document.getUserId(), document.getId());
           return null;
         });
   }
 
-  @EventListener(DocumentDeletedEvent.class)
+  @TransactionalEventListener(value = DocumentDeletedEvent.class)
   void process(DocumentDeletedEvent event) {
 
     documentIndexer.delete(event.document())

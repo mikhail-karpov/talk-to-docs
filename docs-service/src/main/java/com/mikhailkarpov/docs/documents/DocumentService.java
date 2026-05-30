@@ -2,26 +2,27 @@ package com.mikhailkarpov.docs.documents;
 
 import com.mikhailkarpov.docs.documents.web.DocumentStatus;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class DocumentService {
 
   private static final Logger log = LoggerFactory.getLogger(DocumentService.class);
 
-  private final Map<String, List<DocumentMetadata>> documents = new ConcurrentHashMap<>();
+  private final DocumentRepository documentRepository;
   private final ApplicationEventPublisher eventPublisher;
 
-  public DocumentService(ApplicationEventPublisher eventPublisher) {
+  public DocumentService(
+      DocumentRepository documentRepository, ApplicationEventPublisher eventPublisher) {
+
+    this.documentRepository = documentRepository;
     this.eventPublisher = eventPublisher;
   }
 
@@ -44,7 +45,7 @@ public class DocumentService {
           .status(DocumentStatus.UPLOADED)
           .build();
 
-      documents.computeIfAbsent(userId, _ -> new ArrayList<>()).add(uploadedDocument);
+      documentRepository.addDocument(uploadedDocument);
       eventPublisher.publishEvent(new DocumentCreatedEvent(uploadedDocument, stableResource));
       log.info("Uploaded document: {}", uploadedDocument);
       return uploadedDocument;
@@ -54,51 +55,38 @@ public class DocumentService {
   }
 
   public DocumentMetadata findDocument(String userId, String documentId) {
-    var documents = this.documents.get(userId);
-    if (documents == null) {
-      throw DocumentNotFoundException.of(documentId);
-    }
-    return documents.stream()
-        .filter(d -> d.getId().equals(documentId))
-        .findFirst()
-        .orElseThrow(() -> DocumentNotFoundException.of(documentId));
+    return this.getDocumentOrThrow(documentId, userId);
   }
 
   public List<DocumentMetadata> findDocuments(String userId) {
-    var documents = this.documents.get(userId);
-    return documents != null ? new ArrayList<>(documents) : List.of();
+    return documentRepository.findDocuments(userId);
   }
 
   public void deleteDocument(String userId, String documentId) {
-    var documents = this.documents.get(userId);
-    var document = this.getDocumentOrThrow(documentId, userId);
-    documents.remove(document);
+    var document = documentRepository.deleteDocument(userId, documentId)
+        .orElseThrow(() -> DocumentNotFoundException.of(documentId));
     eventPublisher.publishEvent(new DocumentDeletedEvent(document));
+    log.info("Deleted document: {}", document);
   }
 
-  public void markProcessed(String documentId, String userId) {
+  @Transactional
+  public void markProcessed(String userId, String documentId) {
     var document = this.getDocumentOrThrow(documentId, userId);
     document.setStatus(DocumentStatus.PROCESSED);
+    documentRepository.updateDocument(document);
+    log.info("Updated document: {}", document);
   }
 
-  public void markError(String documentId, String userId) {
+  @Transactional
+  public void markError(String userId, String documentId) {
     var document = this.getDocumentOrThrow(documentId, userId);
     document.setStatus(DocumentStatus.ERROR);
+    documentRepository.updateDocument(document);
+    log.info("Updated document: {}", document);
   }
 
   private DocumentMetadata getDocumentOrThrow(String documentId, String userId) {
-    var documents = this.documents.get(userId);
-    if (documents == null) {
-      throw DocumentNotFoundException.of(documentId);
-    }
-
-    var document = documents.stream()
-        .filter(d -> d.getId().equals(documentId))
-        .findFirst()
-        .orElse(null);
-    if (document == null) {
-      throw DocumentNotFoundException.of(documentId);
-    }
-    return document;
+    return documentRepository.findDocument(userId, documentId)
+        .orElseThrow(() -> DocumentNotFoundException.of(documentId));
   }
 }
