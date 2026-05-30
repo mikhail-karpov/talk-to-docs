@@ -1,24 +1,29 @@
 package com.mikhailkarpov.docs.ai;
 
+import com.mikhailkarpov.docs.ai.reader.DocumentSourceReaderRegistry;
 import com.mikhailkarpov.docs.documents.DocumentMetadata;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.reader.markdown.MarkdownDocumentReader;
-import org.springframework.ai.reader.markdown.config.MarkdownDocumentReaderConfig;
-import org.springframework.ai.transformer.splitter.TokenTextSplitter;
+import org.springframework.ai.transformer.splitter.TextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.core.io.Resource;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 @Component
-public class RagService {
+public class DocumentIndexer {
 
   private final VectorStore vectorStore;
+  private final DocumentSourceReaderRegistry readerRegistry;
+  private final TextSplitter textSplitter;
 
-  public RagService(VectorStore vectorStore) {
+  public DocumentIndexer(VectorStore vectorStore,
+                         DocumentSourceReaderRegistry readerRegistry,
+                         TextSplitter textSplitter) {
     this.vectorStore = vectorStore;
+    this.readerRegistry = readerRegistry;
+    this.textSplitter = textSplitter;
   }
 
   @Async("applicationTaskExecutor")
@@ -34,12 +39,12 @@ public class RagService {
   }
 
   private List<Document> readDocuments(DocumentMetadata document, Resource resource) {
-    var config = MarkdownDocumentReaderConfig.builder()
-        .withAdditionalMetadata("documentId", document.getId())
-        .withAdditionalMetadata("userId", document.getUserId())
-        .build();
-
-    return TokenTextSplitter.builder().build()
-        .apply(new MarkdownDocumentReader(resource, config).get());
+    var reader = readerRegistry.get(document.getContentType());
+    var docs = reader.read(resource);
+    docs.forEach(d -> {
+      d.getMetadata().put("documentId", document.getId());
+      d.getMetadata().put("userId", document.getUserId());
+    });
+    return textSplitter.apply(docs);
   }
 }

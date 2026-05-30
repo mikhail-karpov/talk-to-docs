@@ -38,7 +38,9 @@ class DocumentControllerTest {
   private static final String USER_ID = "101";
 
   private static final DocumentMetadata TEST_DOCUMENT =
-      new DocumentMetadata("doc-1", USER_ID, "test.md", 1024L, DocumentStatus.UPLOADED);
+      DocumentMetadata.builder().id("doc-1").userId(USER_ID).name("test.md")
+          .contentType("text/markdown").sizeBytes(1024L).status(DocumentStatus.UPLOADED)
+          .build();
 
 
   @Nested
@@ -47,7 +49,7 @@ class DocumentControllerTest {
     @Test
     @WithMockAuthenticatedUser
     void uploadDocument_withMarkdownFile_returnsDocumentResponse() throws Exception {
-      when(documentService.uploadDocument(eq(USER_ID), any()))
+      when(documentService.uploadDocument(eq(USER_ID), any(), eq("text/markdown")))
           .thenReturn(TEST_DOCUMENT);
 
       var file = new MockMultipartFile(
@@ -63,9 +65,37 @@ class DocumentControllerTest {
 
     @Test
     @WithMockAuthenticatedUser
-    void uploadDocument_withInvalidContentType_returns400() throws Exception {
+    void uploadDocument_withTextFile_returnsDocumentResponse() throws Exception {
+      when(documentService.uploadDocument(eq(USER_ID), any(), eq("text/plain")))
+          .thenReturn(TEST_DOCUMENT);
+
+      var file = new MockMultipartFile(
+          "document", "test.txt", MediaType.TEXT_PLAIN_VALUE, "hello".getBytes());
+
+      mockMvc.perform(multipart("/api/v1/documents").file(file))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.id").value("doc-1"));
+    }
+
+    @Test
+    @WithMockAuthenticatedUser
+    void uploadDocument_withPdfFile_returnsDocumentResponse() throws Exception {
+      when(documentService.uploadDocument(eq(USER_ID), any(), eq(MediaType.APPLICATION_PDF_VALUE)))
+          .thenReturn(TEST_DOCUMENT);
+
       var file = new MockMultipartFile(
           "document", "test.pdf", MediaType.APPLICATION_PDF_VALUE, "content".getBytes());
+
+      mockMvc.perform(multipart("/api/v1/documents").file(file))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.id").value("doc-1"));
+    }
+
+    @Test
+    @WithMockAuthenticatedUser
+    void uploadDocument_withInvalidContentType_returns400() throws Exception {
+      var file = new MockMultipartFile(
+          "document", "test.png", MediaType.IMAGE_PNG_VALUE, "content".getBytes());
 
       mockMvc.perform(multipart("/api/v1/documents").file(file))
           .andExpect(status().isBadRequest());

@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,23 +25,25 @@ public class DocumentService {
     this.eventPublisher = eventPublisher;
   }
 
-  public DocumentMetadata uploadDocument(String userId, Resource resource) {
-    try {
+  public DocumentMetadata uploadDocument(String userId, Resource resource, String contentType) {
+
+    try (var inputStream = resource.getInputStream()) {
       var filename = resource.getFilename();
-      var bytes = resource.getInputStream().readAllBytes();
+      var bytes = inputStream.readAllBytes();
       var stableResource = new ByteArrayResource(bytes) {
         @Override
         public String getFilename() {
           return filename;
         }
       };
-      var uploadedDocument = new DocumentMetadata(
-          UUID.randomUUID().toString(),
-          userId,
-          filename,
-          bytes.length,
-          DocumentStatus.UPLOADED
-      );
+      var uploadedDocument = DocumentMetadata.builder()
+          .userId(userId)
+          .name(filename)
+          .contentType(contentType)
+          .sizeBytes(bytes.length)
+          .status(DocumentStatus.UPLOADED)
+          .build();
+
       documents.computeIfAbsent(userId, _ -> new ArrayList<>()).add(uploadedDocument);
       eventPublisher.publishEvent(new DocumentCreatedEvent(uploadedDocument, stableResource));
       log.info("Uploaded document: {}", uploadedDocument);
@@ -70,35 +71,22 @@ public class DocumentService {
 
   public void deleteDocument(String userId, String documentId) {
     var documents = this.documents.get(userId);
-    if (documents == null) {
-      throw DocumentNotFoundException.of(documentId);
-    }
-    var document = documents.stream()
-        .filter(d -> d.getId().equals(documentId))
-        .findFirst()
-        .orElseThrow(() -> DocumentNotFoundException.of(documentId));
-
+    var document = this.getDocumentOrThrow(documentId, userId);
     documents.remove(document);
     eventPublisher.publishEvent(new DocumentDeletedEvent(document));
   }
 
   public void markProcessed(String documentId, String userId) {
-    var documents = this.documents.get(userId);
-    if (documents == null) {
-      throw DocumentNotFoundException.of(documentId);
-    }
-
-    var document = documents.stream()
-        .filter(d -> d.getId().equals(documentId))
-        .findFirst()
-        .orElse(null);
-    if (document == null) {
-      throw DocumentNotFoundException.of(documentId);
-    }
+    var document = this.getDocumentOrThrow(documentId, userId);
     document.setStatus(DocumentStatus.PROCESSED);
   }
 
   public void markError(String documentId, String userId) {
+    var document = this.getDocumentOrThrow(documentId, userId);
+    document.setStatus(DocumentStatus.ERROR);
+  }
+
+  private DocumentMetadata getDocumentOrThrow(String documentId, String userId) {
     var documents = this.documents.get(userId);
     if (documents == null) {
       throw DocumentNotFoundException.of(documentId);
@@ -111,6 +99,6 @@ public class DocumentService {
     if (document == null) {
       throw DocumentNotFoundException.of(documentId);
     }
-    document.setStatus(DocumentStatus.ERROR);
+    return document;
   }
 }

@@ -1,4 +1,11 @@
 app:
+  ai:
+    text-splitter:
+      chunk-size: 800
+      min-chunk-size-chars: 350
+      min-chunk-length-to-embed: 5
+      max-num-chunks: 10000
+      keep-separator: true
   frontend:
     url: http://localhost:5173
 
@@ -11,6 +18,8 @@ spring:
     ollama:
       chat:
         model: qwen2.5
+      embedding:
+        model: nomic-embed-text
       init:
         pull-model-strategy: when_missing
   application:
@@ -27,4 +36,4 @@ spring:
       enabled: true
   servlet:
     multipart:
-      max-file-size: 5MB
+      max-file-size: 1MB

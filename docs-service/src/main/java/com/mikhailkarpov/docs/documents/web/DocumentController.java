@@ -30,9 +30,10 @@ public class DocumentController {
   @PostMapping
   public DocumentResponse uploadDocument(
       @AuthenticationPrincipal User user,
-      @FileConstraint(allowedTypes = {"text/markdown"}) @RequestPart(required = false) MultipartFile document) {
+      @FileConstraint(allowedTypes = {"text/markdown", "text/plain", "application/pdf"})
+      @RequestPart(required = false) MultipartFile document) {
 
-    var doc = documentService.uploadDocument(user.getId(), document.getResource());
+    var doc = documentService.uploadDocument(user.getId(), document.getResource(), document.getContentType());
     return DocumentResponse.from(doc);
   }
 

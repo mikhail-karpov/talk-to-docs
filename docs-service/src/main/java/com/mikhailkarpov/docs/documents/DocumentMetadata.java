@@ -2,22 +2,29 @@ package com.mikhailkarpov.docs.documents;
 
 import com.mikhailkarpov.docs.documents.web.DocumentStatus;
 import java.time.Instant;
+import java.util.UUID;
 
 public class DocumentMetadata {
 
   private final String id;
   private final String userId;
   private final String name;
+  private final String contentType;
   private final long sizeBytes;
   private DocumentStatus status;
   private Instant updatedAt;
 
-  public DocumentMetadata(String id, String userId, String name, long sizeBytes, DocumentStatus status) {
+  private DocumentMetadata(String id, String userId, String name, String contentType, long sizeBytes, DocumentStatus status) {
     this.id = id;
     this.userId = userId;
     this.name = name;
+    this.contentType = contentType;
     this.sizeBytes = sizeBytes;
     setStatus(status);
+  }
+
+  public static DocumentMetadataBuilder builder() {
+    return new DocumentMetadataBuilder();
   }
 
   public void setStatus(DocumentStatus status) {
@@ -31,6 +38,10 @@ public class DocumentMetadata {
 
   public String getName() {
     return name;
+  }
+
+  public String getContentType() {
+    return contentType;
   }
 
   public long getSizeBytes() {
@@ -67,9 +78,56 @@ public class DocumentMetadata {
         "id='" + id + '\'' +
         ", userId='" + userId + '\'' +
         ", name='" + name + '\'' +
+        ", contentType='" + contentType + '\'' +
         ", sizeBytes=" + sizeBytes +
         ", status=" + status +
         ", updatedAt=" + updatedAt +
         '}';
+  }
+
+  public static class DocumentMetadataBuilder {
+
+    private String id = UUID.randomUUID().toString();
+    private String userId;
+    private String name;
+    private String contentType;
+    private long sizeBytes;
+    private DocumentStatus status = DocumentStatus.PENDING;
+
+    private DocumentMetadataBuilder() {}
+
+    public DocumentMetadataBuilder id(String id) {
+      this.id = id;
+      return this;
+    }
+
+    public DocumentMetadataBuilder userId(String userId) {
+      this.userId = userId;
+      return this;
+    }
+
+    public DocumentMetadataBuilder name(String name) {
+      this.name = name;
+      return this;
+    }
+
+    public DocumentMetadataBuilder contentType(String contentType) {
+      this.contentType = contentType;
+      return this;
+    }
+
+    public DocumentMetadataBuilder sizeBytes(long sizeBytes) {
+      this.sizeBytes = sizeBytes;
+      return this;
+    }
+
+    public DocumentMetadataBuilder status(DocumentStatus status) {
+      this.status = status;
+      return this;
+    }
+
+    public DocumentMetadata build() {
+      return new DocumentMetadata(id, userId, name, contentType, sizeBytes, status);
+    }
   }
 }

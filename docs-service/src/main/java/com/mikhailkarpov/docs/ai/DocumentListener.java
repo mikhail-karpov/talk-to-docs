@@ -12,11 +12,11 @@ import org.springframework.stereotype.Component;
 public class DocumentListener {
 
   private static final Logger log = LoggerFactory.getLogger(DocumentListener.class);
-  private final RagService ragService;
+  private final DocumentIndexer documentIndexer;
   private final DocumentService documentService;
 
-  public DocumentListener(RagService ragService, DocumentService documentService) {
-    this.ragService = ragService;
+  public DocumentListener(DocumentIndexer documentIndexer, DocumentService documentService) {
+    this.documentIndexer = documentIndexer;
     this.documentService = documentService;
   }
 
@@ -25,7 +25,7 @@ public class DocumentListener {
 
     var document = event.document();
     var resource = event.resource();
-    ragService.add(document, resource)
+    documentIndexer.add(document, resource)
         .thenRun(() -> documentService.markProcessed(document.getId(), document.getUserId()))
         .exceptionally(ex -> {
           log.error("Failed to process document {}", document, ex);
@@ -37,7 +37,7 @@ public class DocumentListener {
   @EventListener(DocumentDeletedEvent.class)
   void process(DocumentDeletedEvent event) {
 
-    ragService.delete(event.document())
+    documentIndexer.delete(event.document())
         .exceptionally(ex -> {
           log.error("Failed to delete document {}", event, ex);
           return null;
