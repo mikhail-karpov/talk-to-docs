@@ -33,6 +33,8 @@ spring:
         dimensions: 768
   application:
     name: docs-service
+  flyway:
+    locations: classpath:db/migration,classpath:db/seed
   main:
     banner-mode: off
   task:

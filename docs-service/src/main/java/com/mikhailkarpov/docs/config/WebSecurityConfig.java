@@ -1,10 +1,8 @@
 package com.mikhailkarpov.docs.config;
 
-import com.mikhailkarpov.docs.auth.UserService;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -96,10 +94,5 @@ public class WebSecurityConfig {
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", config);
     return source;
-  }
-
-  @Bean
-  CommandLineRunner userInitializer(UserService userService) {
-    return _ -> userService.createUser("user@example.com", "password", "Mikhail", "Karpov");
   }
 }

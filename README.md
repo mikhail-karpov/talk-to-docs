@@ -51,7 +51,7 @@ pnpm dev
 
 Open the browser at `http://localhost:5173` and use the following to sign in: 
 ```
-user@example.com
+test@example.com
 password
 ```
 
