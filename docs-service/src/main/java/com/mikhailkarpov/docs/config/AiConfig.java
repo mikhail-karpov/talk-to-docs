@@ -2,6 +2,7 @@ package com.mikhailkarpov.docs.config;
 
 import com.mikhailkarpov.docs.config.properties.TextSplitterProperties;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -13,8 +14,11 @@ import org.springframework.context.annotation.Configuration;
 public class AiConfig {
 
   @Bean
-  ChatMemory chatMemory() {
-    return MessageWindowChatMemory.builder().maxMessages(10).build();
+  ChatMemory chatMemory(ChatMemoryRepository chatMemoryRepository) {
+    return MessageWindowChatMemory.builder()
+        .chatMemoryRepository(chatMemoryRepository)
+        .maxMessages(10)
+        .build();
   }
 
   @Bean
