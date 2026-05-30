@@ -16,8 +16,8 @@ import { cn } from '@/lib/utils'
 import { formatFileSize } from '@/features/documents/utils/format-file-size'
 import { useUploadDocuments } from '@/features/documents/hooks/use-upload-documents'
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024
-const ALLOWED_EXTENSIONS = ['md', 'txt']
+const MAX_FILE_SIZE = 5 * 1024 * 1024
+const ALLOWED_EXTENSIONS = ['md', 'txt', 'pdf']
 
 const uploadSchema = z.object({
   files: z
@@ -25,7 +25,7 @@ const uploadSchema = z.object({
     .refine((files) => Array.isArray(files) && files.length > 0, 'Select at least one file.')
     .refine(
       (files) => !Array.isArray(files) || files.every((f) => f.size <= MAX_FILE_SIZE),
-      'Each file must be 10 MB or less.'
+      'Each file must be 5 MB or less.'
     )
     .refine(
       (files) =>
@@ -34,7 +34,7 @@ const uploadSchema = z.object({
           const ext = f.name.split('.').pop()?.toLowerCase()
           return ext !== undefined && ALLOWED_EXTENSIONS.includes(ext)
         }),
-      'Only .md and .txt files are supported.'
+      'Only .md, .txt, and .pdf files are supported.'
     ),
 })
 
@@ -122,12 +122,12 @@ export function UploadDocumentsForm({ onSuccess }: UploadDocumentsFormProps) {
                       Drag and drop files here, or{' '}
                       <span className="text-foreground underline underline-offset-2">browse</span>
                     </p>
-                    <p className="text-xs text-muted-foreground">.md and .txt · max 10 MB each</p>
+                    <p className="text-xs text-muted-foreground">.md, .txt and .pdf · max 5 MB each</p>
                     <input
                       ref={inputRef}
                       type="file"
                       multiple
-                      accept=".md,.txt"
+                      accept=".md,.txt,.pdf"
                       className="hidden"
                       disabled={isLocked}
                       onChange={handleFileChange}
