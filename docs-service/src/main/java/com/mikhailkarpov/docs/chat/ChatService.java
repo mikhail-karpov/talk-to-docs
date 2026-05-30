@@ -4,25 +4,28 @@ import com.mikhailkarpov.docs.chat.command.CreateConversationCommand;
 import com.mikhailkarpov.docs.chat.command.SendMessageCommand;
 import com.mikhailkarpov.docs.chat.event.MessageCreatedEvent;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ChatService {
 
-  private final Map<String, List<Conversation>> conversations = new ConcurrentHashMap<>();
-  private final Map<String, List<ChatMessage>> messages = new ConcurrentHashMap<>();
+  private static final Logger log = LoggerFactory.getLogger(ChatService.class);
+
+  private final ChatRepository chatRepository;
   private final ApplicationEventPublisher eventPublisher;
 
-  public ChatService(ApplicationEventPublisher eventPublisher) {
+  public ChatService(ChatRepository chatRepository, ApplicationEventPublisher eventPublisher) {
+    this.chatRepository = chatRepository;
     this.eventPublisher = eventPublisher;
   }
 
+  @Transactional
   public Conversation createConversation(CreateConversationCommand command) {
 
     var conversation = new Conversation(
@@ -31,7 +34,7 @@ public class ChatService {
         command.title(),
         Instant.now());
 
-    conversations.computeIfAbsent(command.userId(), _ -> new ArrayList<>()).add(conversation);
+    chatRepository.addConversation(conversation);
 
     var message = new ChatMessage(UUID.randomUUID().toString(),
         conversation.id(),
@@ -39,25 +42,27 @@ public class ChatService {
         AuthorType.USER,
         command.content(),
         Instant.now());
-    messages.computeIfAbsent(conversation.id(), _ -> new ArrayList<>()).add(message);
+    chatRepository.addMessage(message);
 
     eventPublisher.publishEvent(new MessageCreatedEvent(message));
+    log.info("Created conversation: {}", conversation);
     return conversation;
   }
 
   public List<Conversation> getConversations(String userId) {
-    return conversations.getOrDefault(userId, List.of());
+    return chatRepository.findConversations(userId);
   }
 
   public List<ChatMessage> getMessages(String conversationId, String userId) {
-    if (!isConversationExists(conversationId, userId)) {
+    if (chatRepository.findConversation(userId, conversationId).isEmpty()) {
       throw ConversationNotFound.of(conversationId);
     }
-    return messages.getOrDefault(conversationId, List.of());
+    return chatRepository.findMessages(conversationId);
   }
 
+  @Transactional
   public void sendMessage(SendMessageCommand command) {
-    if (!isConversationExists(command.conversationId(), command.userId())) {
+    if (chatRepository.findConversation(command.userId(), command.conversationId()).isEmpty()) {
       throw ConversationNotFound.of(command.conversationId());
     }
 
@@ -68,15 +73,8 @@ public class ChatService {
         command.authorType(),
         command.content(),
         Instant.now());
-    messages.get(command.conversationId()).add(message);
+    chatRepository.addMessage(message);
     eventPublisher.publishEvent(new MessageCreatedEvent(message));
-  }
-
-  private boolean isConversationExists(String conversationId, String userId) {
-    var conversations = this.conversations.get(userId);
-    if (conversations == null) {
-      return false;
-    }
-    return conversations.stream().anyMatch(c -> c.id().equals(conversationId));
+    log.info("Created message: {}", message);
   }
 }

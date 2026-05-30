@@ -71,7 +71,6 @@ public class ChatMessage {
         ", conversationId='" + conversationId + '\'' +
         ", userId='" + userId + '\'' +
         ", authorType=" + authorType +
-        ", content='" + content + '\'' +
         ", createdAt=" + createdAt +
         '}';
   }
