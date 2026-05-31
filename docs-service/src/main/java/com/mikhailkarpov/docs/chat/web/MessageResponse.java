@@ -6,6 +6,7 @@ import java.time.Instant;
 
 public record MessageResponse(
     String id,
+    String conversationId,
     String userId,
     AuthorType authorType,
     String content,
@@ -14,6 +15,7 @@ public record MessageResponse(
   public static MessageResponse from(ChatMessage message) {
     return new MessageResponse(
         message.getId(),
+        message.getConversationId(),
         message.getUserId(),
         message.getAuthorType(),
         message.getContent(),
