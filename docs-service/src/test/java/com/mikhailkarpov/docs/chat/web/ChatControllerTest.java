@@ -3,6 +3,7 @@ package com.mikhailkarpov.docs.chat.web;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -12,6 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.mikhailkarpov.docs.auth.UserService;
 import com.mikhailkarpov.docs.chat.AuthorType;
 import com.mikhailkarpov.docs.chat.command.CreateConversationCommand;
+import com.mikhailkarpov.docs.chat.command.DeleteConversationCommand;
 import com.mikhailkarpov.docs.chat.command.RenameConversationCommand;
 import com.mikhailkarpov.docs.chat.command.SendMessageCommand;
 import com.mikhailkarpov.docs.chat.ChatMessage;
@@ -192,6 +194,37 @@ class ChatControllerTest {
               .content("""
                   {"title": "New name"}
                   """))
+          .andExpect(status().isUnauthorized());
+    }
+  }
+
+
+  @Nested
+  class DeleteConversationTest {
+
+    private static final DeleteConversationCommand COMMAND =
+        new DeleteConversationCommand("conv-id", USER_ID);
+
+    @Test
+    @WithMockAuthenticatedUser
+    void returns204_whenDeleted() throws Exception {
+      mockMvc.perform(delete("/api/v1/chat/conv-id"))
+          .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @WithMockAuthenticatedUser
+    void returns404_whenConversationNotFound() throws Exception {
+      doThrow(ConversationNotFound.of("conv-id"))
+          .when(chatService).deleteConversation(COMMAND);
+
+      mockMvc.perform(delete("/api/v1/chat/conv-id"))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void returns401_whenUnauthenticated() throws Exception {
+      mockMvc.perform(delete("/api/v1/chat/conv-id"))
           .andExpect(status().isUnauthorized());
     }
   }

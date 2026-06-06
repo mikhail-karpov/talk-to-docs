@@ -1,6 +1,7 @@
 package com.mikhailkarpov.docs.chat;
 
 import com.mikhailkarpov.docs.chat.command.CreateConversationCommand;
+import com.mikhailkarpov.docs.chat.command.DeleteConversationCommand;
 import com.mikhailkarpov.docs.chat.command.RenameConversationCommand;
 import com.mikhailkarpov.docs.chat.command.SendMessageCommand;
 import com.mikhailkarpov.docs.chat.event.ConversationCreatedEvent;
@@ -59,6 +60,14 @@ public class ChatService {
         .orElseThrow(() -> ConversationNotFound.of(command.conversationId()));
     log.info("Renamed conversation {} to: {}", command.conversationId(), command.title());
     return conversation;
+  }
+
+  @Transactional
+  public void deleteConversation(DeleteConversationCommand command) {
+    if (!chatRepository.deleteConversation(command.conversationId(), command.userId())) {
+      throw ConversationNotFound.of(command.conversationId());
+    }
+    log.info("Deleted conversation {}", command.conversationId());
   }
 
   public List<Conversation> getConversations(String userId) {

@@ -9,6 +9,8 @@ public interface ChatRepository {
 
   Optional<Conversation> updateTitle(String conversationId, String userId, String title);
 
+  boolean deleteConversation(String conversationId, String userId);
+
   void addMessage(ChatMessage message);
 
   List<Conversation> findConversations(String userId);

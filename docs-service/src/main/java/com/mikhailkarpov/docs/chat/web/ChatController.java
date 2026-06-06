@@ -4,18 +4,22 @@ import com.mikhailkarpov.docs.auth.User;
 import com.mikhailkarpov.docs.chat.AuthorType;
 import com.mikhailkarpov.docs.chat.ChatService;
 import com.mikhailkarpov.docs.chat.command.CreateConversationCommand;
+import com.mikhailkarpov.docs.chat.command.DeleteConversationCommand;
 import com.mikhailkarpov.docs.chat.command.RenameConversationCommand;
 import com.mikhailkarpov.docs.chat.command.SendMessageCommand;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -58,6 +62,14 @@ public class ChatController {
     var command = new RenameConversationCommand(conversationId, user.getId(), request.title());
     var conversation = chatService.renameConversation(command);
     return ConversationResponse.from(conversation);
+  }
+
+  @DeleteMapping("/{conversationId}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void deleteConversation(
+      @PathVariable String conversationId, @AuthenticationPrincipal User user) {
+
+    chatService.deleteConversation(new DeleteConversationCommand(conversationId, user.getId()));
   }
 
   @PostMapping("/{conversationId}/messages")

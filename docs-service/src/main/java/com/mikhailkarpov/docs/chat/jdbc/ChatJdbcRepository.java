@@ -42,6 +42,11 @@ public class ChatJdbcRepository implements ChatRepository {
     RETURNING id, user_id, title, created_at;
     """;
 
+  private static final String DELETE_CONVERSATION = """
+    DELETE FROM conversations
+    WHERE id = :id AND user_id = :userId;
+    """;
+
   private static final String INSERT_MESSAGE = """
     INSERT INTO chat_messages
         (id, conversation_id, user_id, author_type, content, created_at)
@@ -82,6 +87,14 @@ public class ChatJdbcRepository implements ChatRepository {
         .param("title", title)
         .query(conversationMapper)
         .optional();
+  }
+
+  @Override
+  public boolean deleteConversation(String conversationId, String userId) {
+    return jdbcClient.sql(DELETE_CONVERSATION)
+        .param("id", UUID.fromString(conversationId))
+        .param("userId", UUID.fromString(userId))
+        .update() > 0;
   }
 
   @Override

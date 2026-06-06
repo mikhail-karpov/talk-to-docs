@@ -2,6 +2,7 @@ package com.mikhailkarpov.docs.chat;
 
 import com.mikhailkarpov.docs.TestcontainersConfig;
 import com.mikhailkarpov.docs.chat.command.CreateConversationCommand;
+import com.mikhailkarpov.docs.chat.command.DeleteConversationCommand;
 import com.mikhailkarpov.docs.chat.command.RenameConversationCommand;
 import com.mikhailkarpov.docs.chat.command.SendMessageCommand;
 import com.mikhailkarpov.docs.chat.event.ConversationCreatedEvent;
@@ -153,6 +154,44 @@ class ChatServiceTest {
 
       Assertions.assertThatThrownBy(() -> chatService.renameConversation(
               new RenameConversationCommand(missingId, USER_ID, "New title")))
+          .isInstanceOf(ConversationNotFound.class);
+    }
+  }
+
+  @Nested
+  class DeleteConversation {
+
+    @Test
+    void deletesConversationAndCascadesMessages() {
+      var message = chatService.createConversation(
+          new CreateConversationCommand(USER_ID, "Chat", "hi"));
+      var conversationId = message.getConversationId();
+
+      chatService.deleteConversation(new DeleteConversationCommand(conversationId, USER_ID));
+
+      Assertions.assertThat(chatRepository.findConversation(USER_ID, conversationId)).isEmpty();
+      Assertions.assertThat(chatRepository.findMessages(conversationId)).isEmpty();
+    }
+
+    @Test
+    void throwsWhenConversationBelongsToAnotherUser() {
+      var message = chatService.createConversation(
+          new CreateConversationCommand(USER_ID, null, "hi"));
+
+      Assertions.assertThatThrownBy(() -> chatService.deleteConversation(
+              new DeleteConversationCommand(message.getConversationId(), OTHER_USER_ID)))
+          .isInstanceOf(ConversationNotFound.class);
+
+      Assertions.assertThat(chatRepository.findConversation(USER_ID, message.getConversationId()))
+          .isPresent();
+    }
+
+    @Test
+    void throwsWhenConversationMissing() {
+      var missingId = UUID.randomUUID().toString();
+
+      Assertions.assertThatThrownBy(() -> chatService.deleteConversation(
+              new DeleteConversationCommand(missingId, USER_ID)))
           .isInstanceOf(ConversationNotFound.class);
     }
   }
