@@ -5,12 +5,14 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.mikhailkarpov.docs.auth.UserService;
 import com.mikhailkarpov.docs.chat.AuthorType;
 import com.mikhailkarpov.docs.chat.command.CreateConversationCommand;
+import com.mikhailkarpov.docs.chat.command.RenameConversationCommand;
 import com.mikhailkarpov.docs.chat.command.SendMessageCommand;
 import com.mikhailkarpov.docs.chat.ChatMessage;
 import com.mikhailkarpov.docs.chat.ChatService;
@@ -44,6 +46,9 @@ class ChatControllerTest {
   private static final ChatMessage MOCK_MESSAGE = new ChatMessage(
       "msg-id", "conv-id", USER_ID, AuthorType.USER, "hi", Instant.parse("2023-01-01T10:20:30Z"));
 
+  private static final Conversation MOCK_CONVERSATION =
+      new Conversation("conv-id", USER_ID, "Test Chat", Instant.parse("2023-01-01T10:20:30Z"));
+
 
   @Nested
   class GetConversationsTest {
@@ -52,7 +57,7 @@ class ChatControllerTest {
     @WithMockAuthenticatedUser
     void returnsConversations_whenAuthenticated() throws Exception {
       when(chatService.getConversations(USER_ID))
-          .thenReturn(List.of(new Conversation("conv-id", USER_ID, "Test Chat", Instant.parse("2023-01-01T10:20:30Z"))));
+          .thenReturn(List.of(MOCK_CONVERSATION));
 
       mockMvc.perform(get("/api/v1/chat"))
           .andExpect(status().isOk())
@@ -118,6 +123,75 @@ class ChatControllerTest {
     @Test
     void returns401_whenUnauthenticated() throws Exception {
       mockMvc.perform(post("/api/v1/chat"))
+          .andExpect(status().isUnauthorized());
+    }
+  }
+
+
+  @Nested
+  class RenameConversationTest {
+
+    private static final RenameConversationCommand COMMAND =
+        new RenameConversationCommand("conv-id", USER_ID, "New name");
+
+    @Test
+    @WithMockAuthenticatedUser
+    void returns200WithUpdatedConversation_whenValid() throws Exception {
+      when(chatService.renameConversation(COMMAND))
+          .thenReturn(MOCK_CONVERSATION);
+
+      mockMvc.perform(put("/api/v1/chat/conv-id")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("""
+                  {"title": "New name"}
+                  """))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.id").value("conv-id"));
+    }
+
+    @Test
+    @WithMockAuthenticatedUser
+    void returns400_whenTitleIsBlank() throws Exception {
+      mockMvc.perform(put("/api/v1/chat/conv-id")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("""
+                  {"title": "   "}
+                  """))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockAuthenticatedUser
+    void returns400_whenTitleIsTooLong() throws Exception {
+      mockMvc.perform(put("/api/v1/chat/conv-id")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("""
+                  {"title": "%s"}
+              """.formatted("a".repeat(65))))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockAuthenticatedUser
+    void returns404_whenConversationNotFound() throws Exception {
+      when(chatService.renameConversation(COMMAND))
+          .thenThrow(ConversationNotFound.of("conv-id"));
+
+      mockMvc.perform(put("/api/v1/chat/conv-id")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("""
+                  {"title": "New name"}
+                  """))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void returns401_whenUnauthenticated() throws Exception {
+      mockMvc.perform(put("/api/v1/chat/conv-id")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("""
+                  {"title": "New name"}
+                  """))
           .andExpect(status().isUnauthorized());
     }
   }

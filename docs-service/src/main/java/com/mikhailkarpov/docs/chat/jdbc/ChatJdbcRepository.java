@@ -38,7 +38,8 @@ public class ChatJdbcRepository implements ChatRepository {
   private static final String UPDATE_CONVERSATION_TITLE = """
     UPDATE conversations
     SET title = :title
-    WHERE id = :id AND user_id = :userId;
+    WHERE id = :id AND user_id = :userId
+    RETURNING id, user_id, title, created_at;
     """;
 
   private static final String INSERT_MESSAGE = """
@@ -74,12 +75,13 @@ public class ChatJdbcRepository implements ChatRepository {
   }
 
   @Override
-  public void updateTitle(String conversationId, String userId, String title) {
-    jdbcClient.sql(UPDATE_CONVERSATION_TITLE)
+  public Optional<Conversation> updateTitle(String conversationId, String userId, String title) {
+    return jdbcClient.sql(UPDATE_CONVERSATION_TITLE)
         .param("id", UUID.fromString(conversationId))
         .param("userId", UUID.fromString(userId))
         .param("title", title)
-        .update();
+        .query(conversationMapper)
+        .optional();
   }
 
   @Override

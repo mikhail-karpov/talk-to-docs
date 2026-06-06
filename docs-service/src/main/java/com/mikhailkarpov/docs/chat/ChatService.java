@@ -53,9 +53,12 @@ public class ChatService {
   }
 
   @Transactional
-  public void renameConversation(RenameConversationCommand command) {
-    chatRepository.updateTitle(command.conversationId(), command.userId(), command.title());
+  public Conversation renameConversation(RenameConversationCommand command) {
+    var conversation = chatRepository.updateTitle(
+            command.conversationId(), command.userId(), command.title())
+        .orElseThrow(() -> ConversationNotFound.of(command.conversationId()));
     log.info("Renamed conversation {} to: {}", command.conversationId(), command.title());
+    return conversation;
   }
 
   public List<Conversation> getConversations(String userId) {

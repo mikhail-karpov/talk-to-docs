@@ -7,7 +7,7 @@ public interface ChatRepository {
 
   void addConversation(Conversation conversation);
 
-  void updateTitle(String conversationId, String userId, String title);
+  Optional<Conversation> updateTitle(String conversationId, String userId, String title);
 
   void addMessage(ChatMessage message);
 

@@ -116,12 +116,17 @@ class ChatServiceTest {
   class RenameConversation {
 
     @Test
-    void persistsNewTitle() {
+    void persistsNewTitleAndReturnsUpdatedConversation() {
       var message = chatService.createConversation(
           new CreateConversationCommand(USER_ID, null, "hi"));
 
-      chatService.renameConversation(
+      var renamed = chatService.renameConversation(
           new RenameConversationCommand(message.getConversationId(), USER_ID, "Generated title"));
+
+      Assertions.assertThat(renamed)
+          .returns(message.getConversationId(), Conversation::id)
+          .returns(USER_ID, Conversation::userId)
+          .returns("Generated title", Conversation::title);
 
       Assertions.assertThat(chatRepository.findConversation(USER_ID, message.getConversationId()))
           .isPresent().get()
@@ -129,16 +134,26 @@ class ChatServiceTest {
     }
 
     @Test
-    void doesNotRenameConversationOfAnotherUser() {
+    void throwsWhenConversationBelongsToAnotherUser() {
       var message = chatService.createConversation(
           new CreateConversationCommand(USER_ID, null, "hi"));
 
-      chatService.renameConversation(
-          new RenameConversationCommand(message.getConversationId(), OTHER_USER_ID, "Hacked"));
+      Assertions.assertThatThrownBy(() -> chatService.renameConversation(
+              new RenameConversationCommand(message.getConversationId(), OTHER_USER_ID, "Hacked")))
+          .isInstanceOf(ConversationNotFound.class);
 
       Assertions.assertThat(chatRepository.findConversation(USER_ID, message.getConversationId()))
           .isPresent().get()
           .returns("Untitled", Conversation::title);
+    }
+
+    @Test
+    void throwsWhenConversationMissing() {
+      var missingId = UUID.randomUUID().toString();
+
+      Assertions.assertThatThrownBy(() -> chatService.renameConversation(
+              new RenameConversationCommand(missingId, USER_ID, "New title")))
+          .isInstanceOf(ConversationNotFound.class);
     }
   }
 
