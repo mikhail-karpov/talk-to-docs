@@ -1,7 +1,7 @@
 package com.mikhailkarpov.docs.ai;
 
-import com.mikhailkarpov.docs.documents.DocumentCreatedEvent;
-import com.mikhailkarpov.docs.documents.DocumentDeletedEvent;
+import com.mikhailkarpov.docs.documents.event.DocumentCreatedEvent;
+import com.mikhailkarpov.docs.documents.event.DocumentDeletedEvent;
 import com.mikhailkarpov.docs.documents.DocumentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

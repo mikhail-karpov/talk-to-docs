@@ -1,6 +1,9 @@
 package com.mikhailkarpov.docs.documents;
 
 import com.mikhailkarpov.docs.TestcontainersConfig;
+import com.mikhailkarpov.docs.documents.event.DocumentCreatedEvent;
+import com.mikhailkarpov.docs.documents.event.DocumentDeletedEvent;
+import com.mikhailkarpov.docs.documents.event.DocumentUpdatedEvent;
 import com.mikhailkarpov.docs.documents.jdbc.DocumentJdbcRepository;
 import com.mikhailkarpov.docs.documents.web.DocumentStatus;
 import java.io.IOException;
@@ -124,6 +127,14 @@ class DocumentServiceTest {
       Assertions.assertThatThrownBy(() -> documentService.findDocument(USER_ID, missingId))
           .isInstanceOf(DocumentNotFoundException.class);
     }
+
+    @Test
+    void throwsWhenDocumentBelongsToAnotherUser() {
+      var document = persistDocument(USER_ID, "private.md", DocumentStatus.UPLOADED);
+
+      Assertions.assertThatThrownBy(() -> documentService.findDocument(OTHER_USER_ID, document.getId()))
+          .isInstanceOf(DocumentNotFoundException.class);
+    }
   }
 
   @Nested
@@ -177,6 +188,17 @@ class DocumentServiceTest {
       Assertions.assertThat(events.stream(DocumentDeletedEvent.class))
           .isEmpty();
     }
+
+    @Test
+    void throwsAndPublishesNothingWhenDocumentBelongsToAnotherUser() {
+      var document = persistDocument(USER_ID, "private.md", DocumentStatus.UPLOADED);
+
+      Assertions.assertThatThrownBy(() -> documentService.deleteDocument(OTHER_USER_ID, document.getId()))
+          .isInstanceOf(DocumentNotFoundException.class);
+
+      Assertions.assertThat(events.stream(DocumentDeletedEvent.class))
+          .isEmpty();
+    }
   }
 
   @Nested
@@ -194,11 +216,33 @@ class DocumentServiceTest {
     }
 
     @Test
+    void publishesUpdatedEvent() {
+      var document = persistDocument(USER_ID, "processing.md", DocumentStatus.UPLOADED);
+
+      documentService.markProcessed(USER_ID, document.getId());
+
+      Assertions.assertThat(events.stream(DocumentUpdatedEvent.class))
+          .hasSize(1)
+          .map(DocumentUpdatedEvent::document)
+          .allMatch(d -> d.getStatus() == DocumentStatus.PROCESSED);
+    }
+
+    @Test
     void throwsWhenNotFound() {
       var missingId = UUID.randomUUID().toString();
 
       Assertions.assertThatThrownBy(() -> documentService.markProcessed(USER_ID, missingId))
           .isInstanceOf(DocumentNotFoundException.class);
+    }
+
+    @Test
+    void throwsWhenDocumentBelongsToAnotherUser() {
+      var document = persistDocument(USER_ID, "other.md", DocumentStatus.UPLOADED);
+
+      Assertions.assertThatThrownBy(() -> documentService.markProcessed(OTHER_USER_ID, document.getId()))
+          .isInstanceOf(DocumentNotFoundException.class);
+
+      Assertions.assertThat(events.stream(DocumentUpdatedEvent.class)).isEmpty();
     }
   }
 
@@ -217,11 +261,33 @@ class DocumentServiceTest {
     }
 
     @Test
+    void publishesUpdatedEvent() {
+      var document = persistDocument(USER_ID, "failing.md", DocumentStatus.UPLOADED);
+
+      documentService.markError(USER_ID, document.getId());
+
+      Assertions.assertThat(events.stream(DocumentUpdatedEvent.class))
+          .hasSize(1)
+          .map(DocumentUpdatedEvent::document)
+          .allMatch(d -> d.getStatus() == DocumentStatus.ERROR);
+    }
+
+    @Test
     void throwsWhenNotFound() {
       var missingId = UUID.randomUUID().toString();
 
       Assertions.assertThatThrownBy(() -> documentService.markError(USER_ID, missingId))
           .isInstanceOf(DocumentNotFoundException.class);
+    }
+
+    @Test
+    void throwsWhenDocumentBelongsToAnotherUser() {
+      var document = persistDocument(USER_ID, "other.md", DocumentStatus.UPLOADED);
+
+      Assertions.assertThatThrownBy(() -> documentService.markError(OTHER_USER_ID, document.getId()))
+          .isInstanceOf(DocumentNotFoundException.class);
+
+      Assertions.assertThat(events.stream(DocumentUpdatedEvent.class)).isEmpty();
     }
   }
 }

@@ -1,5 +1,8 @@
 package com.mikhailkarpov.docs.documents;
 
+import com.mikhailkarpov.docs.documents.event.DocumentCreatedEvent;
+import com.mikhailkarpov.docs.documents.event.DocumentDeletedEvent;
+import com.mikhailkarpov.docs.documents.event.DocumentUpdatedEvent;
 import com.mikhailkarpov.docs.documents.web.DocumentStatus;
 import java.io.IOException;
 import java.util.List;
@@ -76,6 +79,7 @@ public class DocumentService {
     var document = this.getDocumentOrThrow(documentId, userId);
     document.setStatus(DocumentStatus.PROCESSED);
     documentRepository.updateDocument(document);
+    eventPublisher.publishEvent(new DocumentUpdatedEvent(document));
     log.info("Updated document: {}", document);
   }
 
@@ -84,6 +88,7 @@ public class DocumentService {
     var document = this.getDocumentOrThrow(documentId, userId);
     document.setStatus(DocumentStatus.ERROR);
     documentRepository.updateDocument(document);
+    eventPublisher.publishEvent(new DocumentUpdatedEvent(document));
     log.info("Updated document: {}", document);
   }
 

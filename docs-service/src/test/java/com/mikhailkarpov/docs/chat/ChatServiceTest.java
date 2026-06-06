@@ -179,5 +179,19 @@ class ChatServiceTest {
       Assertions.assertThat(events.stream(MessageCreatedEvent.class))
           .isEmpty();
     }
+
+    @Test
+    void throwsAndPublishesNothingWhenConversationBelongsToAnotherUser() {
+      var conversation = chatService.createConversation(
+          new CreateConversationCommand(USER_ID, "Chat", "hi"));
+      events.clear();
+
+      Assertions.assertThatThrownBy(() -> chatService.sendMessage(
+              new SendMessageCommand(conversation.id(), OTHER_USER_ID, "x", AuthorType.USER)))
+          .isInstanceOf(ConversationNotFound.class);
+
+      Assertions.assertThat(events.stream(MessageCreatedEvent.class))
+          .isEmpty();
+    }
   }
 }
