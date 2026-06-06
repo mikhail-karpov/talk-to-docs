@@ -1,173 +1,115 @@
-import { useRef } from 'react'
-import { useForm, useWatch } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Loader2, Paperclip, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
+import { useRef, useState } from 'react'
+import { Loader2, Paperclip } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { formatFileSize } from '@/features/documents/utils/format-file-size'
 import { useUploadDocuments } from '@/features/documents/hooks/use-upload-documents'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024
 const ALLOWED_EXTENSIONS = ['md', 'txt', 'pdf']
 
-const uploadSchema = z.object({
-  files: z
-    .custom<File[]>()
-    .refine((files) => Array.isArray(files) && files.length > 0, 'Select at least one file.')
-    .refine(
-      (files) => !Array.isArray(files) || files.every((f) => f.size <= MAX_FILE_SIZE),
-      'Each file must be 5 MB or less.'
-    )
-    .refine(
-      (files) =>
-        !Array.isArray(files) ||
-        files.every((f) => {
-          const ext = f.name.split('.').pop()?.toLowerCase()
-          return ext !== undefined && ALLOWED_EXTENSIONS.includes(ext)
-        }),
-      'Only .md, .txt, and .pdf files are supported.'
-    ),
-})
+const ACCEPT_ATTR = ALLOWED_EXTENSIONS.map((ext) => `.${ext}`).join(',')
+const EXTENSIONS_LABEL = ALLOWED_EXTENSIONS.map((ext) => `.${ext}`).join(', ')
+const MAX_FILE_SIZE_LABEL = `${MAX_FILE_SIZE / (1024 * 1024)} MB`
 
-type UploadValues = z.infer<typeof uploadSchema>
-
-interface UploadDocumentsFormProps {
-  onSuccess?: () => void
+function rejectionReason(file: File): string | null {
+  const ext = file.name.split('.').pop()?.toLowerCase()
+  if (ext === undefined || !ALLOWED_EXTENSIONS.includes(ext)) {
+    return 'unsupported type'
+  }
+  if (file.size > MAX_FILE_SIZE) {
+    return `over ${MAX_FILE_SIZE_LABEL}`
+  }
+  return null
 }
 
-export function UploadDocumentsForm({ onSuccess }: UploadDocumentsFormProps) {
+export function UploadDocumentsForm() {
+  const { upload, isUploading } = useUploadDocuments()
   const inputRef = useRef<HTMLInputElement>(null)
-  const upload = useUploadDocuments()
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const form = useForm<UploadValues>({
-    resolver: zodResolver(uploadSchema),
-    defaultValues: { files: [] },
-  })
+  async function handleFiles(incoming: File[]) {
+    if (isUploading || incoming.length === 0) return
 
-  const selectedFiles: File[] = useWatch({ control: form.control, name: 'files' }) ?? []
+    const seen = new Set<string>()
+    const accepted: File[] = []
+    const failed: string[] = []
+    for (const file of incoming) {
+      if (seen.has(file.name)) continue
+      seen.add(file.name)
+      const reason = rejectionReason(file)
+      if (reason) {
+        failed.push(`${file.name} (${reason})`)
+      } else {
+        accepted.push(file)
+      }
+    }
 
-  const isLocked = upload.isPending
+    if (accepted.length > 0) {
+      const result = await upload(accepted)
+      failed.push(...result.failed)
+    }
 
-  async function triggerUpload(files: File[]) {
-    const result = await form.trigger('files')
-    if (!result) return
-    const docs = await upload.mutateAsync(files).catch(() => null)
-    if (!docs) return
-    form.reset()
-    onSuccess?.()
-  }
-
-  function addFiles(incoming: File[]) {
-    if (isLocked) return
-    const existing: File[] = form.getValues('files') ?? []
-    const merged = [
-      ...existing,
-      ...incoming.filter((f) => !existing.some((ex) => ex.name === f.name)),
-    ]
-    form.setValue('files', merged, { shouldValidate: true })
-    triggerUpload(merged)
+    setErrorMessage(failed.length > 0 ? `Couldn't upload: ${failed.join(', ')}` : null)
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const incoming = Array.from(e.target.files ?? [])
     if (inputRef.current) inputRef.current.value = ''
-    addFiles(incoming)
+    void handleFiles(incoming)
   }
 
-  function removeFile(name: string) {
-    const updated = selectedFiles.filter((f) => f.name !== name)
-    form.setValue('files', updated, { shouldValidate: true })
+  function openPicker() {
+    if (!isUploading) inputRef.current?.click()
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <Form {...form}>
-        <form className="flex flex-col gap-4">
-          <FormField
-            control={form.control}
-            name="files"
-            render={() => (
-              <FormItem>
-                <FormLabel>Files</FormLabel>
-                <FormControl>
-                  <div
-                    className={cn(
-                      'flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border p-10 text-center transition-colors',
-                      isLocked
-                        ? 'opacity-50 cursor-not-allowed'
-                        : 'cursor-pointer hover:bg-muted/50'
-                    )}
-                    onClick={() => !isLocked && inputRef.current?.click()}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => {
-                      e.preventDefault()
-                      addFiles(Array.from(e.dataTransfer.files))
-                    }}
-                  >
-                    {upload.isPending ? (
-                      <Loader2 className="size-8 text-muted-foreground animate-spin" />
-                    ) : (
-                      <Paperclip className="size-8 text-muted-foreground" />
-                    )}
-                    <p className="text-sm text-muted-foreground">
-                      Drag and drop files here, or{' '}
-                      <span className="text-foreground underline underline-offset-2">browse</span>
-                    </p>
-                    <p className="text-xs text-muted-foreground">.md, .txt and .pdf · max 5 MB each</p>
-                    <input
-                      ref={inputRef}
-                      type="file"
-                      multiple
-                      accept=".md,.txt,.pdf"
-                      className="hidden"
-                      disabled={isLocked}
-                      onChange={handleFileChange}
-                    />
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+      <p className="text-sm font-medium">Files</p>
+      <div
+        role="button"
+        tabIndex={isUploading ? -1 : 0}
+        aria-label="Upload documents"
+        aria-disabled={isUploading}
+        className={cn(
+          'flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border p-10 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          isUploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-muted/50'
+        )}
+        onClick={openPicker}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            openPicker()
+          }
+        }}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault()
+          void handleFiles(Array.from(e.dataTransfer.files))
+        }}
+      >
+        {isUploading ? (
+          <Loader2 className="size-8 text-muted-foreground animate-spin" />
+        ) : (
+          <Paperclip className="size-8 text-muted-foreground" />
+        )}
+        <p className="text-sm text-muted-foreground">
+          Drag and drop files here, or{' '}
+          <span className="text-foreground underline underline-offset-2">browse</span>
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {EXTENSIONS_LABEL} · max {MAX_FILE_SIZE_LABEL} each
+        </p>
+        <input
+          ref={inputRef}
+          type="file"
+          multiple
+          accept={ACCEPT_ATTR}
+          className="hidden"
+          disabled={isUploading}
+          onChange={handleFileChange}
+        />
+      </div>
 
-          {selectedFiles.length > 0 && (
-            <ul className="flex flex-col gap-1">
-              {selectedFiles.map((file) => (
-                <li
-                  key={file.name}
-                  className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
-                >
-                  <span className="truncate text-foreground">{file.name}</span>
-                  <div className="flex items-center gap-2 shrink-0 ml-2">
-                    <span className="text-muted-foreground">{formatFileSize(file.size)}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="size-6"
-                      onClick={() => removeFile(file.name)}
-                      aria-label={`Remove ${file.name}`}
-                    >
-                      <X />
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {upload.errorMessage && <p className="text-sm text-destructive">{upload.errorMessage}</p>}
-        </form>
-      </Form>
+      {errorMessage && <p className="text-sm text-destructive">{errorMessage}</p>}
     </div>
   )
 }

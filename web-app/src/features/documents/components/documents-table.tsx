@@ -1,4 +1,4 @@
-import { FileText } from 'lucide-react'
+import { AlertCircle, FileText } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -9,14 +9,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { useDocuments } from '@/features/documents/hooks/use-documents'
 import { formatFileSize } from '@/features/documents/utils/format-file-size'
+import { useDocuments } from '@/features/documents/hooks/use-documents'
 import { DocumentStatusBadge } from './document-status-badge'
 import { DocumentRowActions } from './document-row-actions'
 
 export function DocumentsTable() {
-  const { documents, isPending } = useDocuments()
-
+  const { documents, isPending, isError } = useDocuments()
   return (
     <div className="flex flex-col gap-6">
       {isPending ? (
@@ -25,6 +24,8 @@ export function DocumentsTable() {
             <Skeleton key={i} className="h-12 w-full rounded-md" />
           ))}
         </div>
+      ) : isError ? (
+        <EmptyState icon={AlertCircle} label="Couldn't load documents. Please try again later." />
       ) : documents.length === 0 ? (
         <EmptyState icon={FileText} label="No documents yet. Upload your first one!" />
       ) : (
@@ -42,7 +43,9 @@ export function DocumentsTable() {
             {documents.map((doc) => (
               <TableRow key={doc.id}>
                 <TableCell className="font-medium">{doc.name}</TableCell>
-                <TableCell className="text-muted-foreground">{formatFileSize(doc.sizeBytes)}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {formatFileSize(doc.sizeBytes)}
+                </TableCell>
                 <TableCell>
                   <DocumentStatusBadge status={doc.status} />
                 </TableCell>

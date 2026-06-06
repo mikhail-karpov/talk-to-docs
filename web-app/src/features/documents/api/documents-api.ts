@@ -15,8 +15,23 @@ async function uploadDocument(file: File): Promise<Document> {
   return data
 }
 
-export async function uploadDocuments(files: File[]): Promise<Document[]> {
-  return Promise.all(files.map(uploadDocument))
+export interface UploadResult {
+  uploaded: Document[]
+  failed: string[]
+}
+
+export async function uploadDocuments(files: File[]): Promise<UploadResult> {
+  const results = await Promise.allSettled(files.map(uploadDocument))
+  const uploaded: Document[] = []
+  const failed: string[] = []
+  results.forEach((result, i) => {
+    if (result.status === 'fulfilled') {
+      uploaded.push(result.value)
+    } else {
+      failed.push(files[i].name)
+    }
+  })
+  return { uploaded, failed }
 }
 
 export async function deleteDocument(id: string): Promise<void> {

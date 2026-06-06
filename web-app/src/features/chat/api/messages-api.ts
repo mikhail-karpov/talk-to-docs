@@ -6,6 +6,7 @@ export async function getMessages(conversationId: string): Promise<Message[]> {
   return data.items
 }
 
-export async function sendMessage(conversationId: string, content: string): Promise<void> {
-  await api.post(`/api/v1/chat/${conversationId}/messages`, { content })
+export async function sendMessage(conversationId: string, content: string): Promise<Message> {
+  const { data } = await api.post<Message>(`/api/v1/chat/${conversationId}/messages`, { content })
+  return data
 }

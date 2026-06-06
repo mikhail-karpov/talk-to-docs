@@ -18,6 +18,7 @@ pnpm preview    # Preview production build
 - **React Router**
 - **Tailwind CSS v4** and **shadcn/ui**
 - **axios**
+- stomp with sockjs-client for real-time updates
 - **TanStack Query** for server-side state management
 - **Zustand** for client-side state management
 

@@ -9,9 +9,9 @@ export function useCreateChat() {
 
   const mutation = useMutation({
     mutationFn: (body: { content: string }) => createChat(body),
-    onSuccess: ({ id }) => {
+    onSuccess: ({ conversationId }) => {
       queryClient.invalidateQueries({ queryKey: chatKeys.conversations() })
-      navigate(`/chats/${id}`)
+      navigate(`/chats/${conversationId}`)
     },
   })
 

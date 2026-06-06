@@ -1,18 +1,24 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { uploadDocuments } from '@/features/documents/api/documents-api'
-import { documentKeys } from '@/features/documents/api/query-keys'
+import { useState } from 'react'
+import { uploadDocuments, type UploadResult } from '@/features/documents/api/documents-api'
+import { useDocumentsStore } from '@/features/documents/stores/documents-store'
 
 export function useUploadDocuments() {
-  const queryClient = useQueryClient()
+  const upsert = useDocumentsStore((s) => s.upsert)
+  const [isUploading, setIsUploading] = useState(false)
 
-  const mutation = useMutation({
-    mutationFn: (files: File[]) => uploadDocuments(files),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: documentKeys.list() })
-    },
-  })
+  async function upload(files: File[]): Promise<UploadResult> {
+    setIsUploading(true)
+    try {
+      const result = await uploadDocuments(files)
+      result.uploaded.forEach(upsert)
+      return result
+    } catch {
+      // uploadDocuments settles per file and shouldn't reject; guard against an unexpected throw.
+      return { uploaded: [], failed: files.map((f) => f.name) }
+    } finally {
+      setIsUploading(false)
+    }
+  }
 
-  const errorMessage = mutation.error ? 'Failed to upload documents. Please try again.' : null
-
-  return { ...mutation, errorMessage }
+  return { upload, isUploading }
 }
