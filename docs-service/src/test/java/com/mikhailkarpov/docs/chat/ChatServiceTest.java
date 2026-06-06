@@ -53,16 +53,17 @@ class ChatServiceTest {
     void persistsConversationWithFirstMessageAndPublishesEvent() {
       var command = new CreateConversationCommand(USER_ID, "My chat", "Hello there");
 
-      var conversation = chatService.createConversation(command);
+      var message = chatService.createConversation(command);
 
-      Assertions.assertThat(conversation)
-          .returns(USER_ID, Conversation::userId)
-          .returns("My chat", Conversation::title);
+      Assertions.assertThat(message)
+          .returns(USER_ID, ChatMessage::getUserId)
+          .returns(AuthorType.USER, ChatMessage::getAuthorType)
+          .returns("Hello there", ChatMessage::getContent);
 
-      Assertions.assertThat(chatRepository.findConversation(USER_ID, conversation.id()))
-          .contains(conversation);
+      Assertions.assertThat(chatRepository.findConversation(USER_ID, message.getConversationId()))
+          .isPresent();
 
-      Assertions.assertThat(chatRepository.findMessages(conversation.id()))
+      Assertions.assertThat(chatRepository.findMessages(message.getConversationId()))
           .singleElement()
           .returns(USER_ID, ChatMessage::getUserId)
           .returns(AuthorType.USER, ChatMessage::getAuthorType)
@@ -75,20 +76,22 @@ class ChatServiceTest {
 
     @Test
     void defaultsTitleWhenBlank() {
-      var conversation = chatService.createConversation(
+      var message = chatService.createConversation(
           new CreateConversationCommand(USER_ID, "  ", "Hi"));
 
-      Assertions.assertThat(conversation.title())
-          .isEqualTo("Untitled");
+      Assertions.assertThat(chatRepository.findConversation(USER_ID, message.getConversationId()))
+          .isPresent().get()
+          .returns("Untitled", Conversation::title);
     }
 
     @Test
     void defaultsTitleWhenNull() {
-      var conversation = chatService.createConversation(
+      var message = chatService.createConversation(
           new CreateConversationCommand(USER_ID, null, "Hi"));
 
-      Assertions.assertThat(conversation.title())
-          .isEqualTo("Untitled");
+      Assertions.assertThat(chatRepository.findConversation(USER_ID, message.getConversationId()))
+          .isPresent().get()
+          .returns("Untitled", Conversation::title);
     }
   }
 
@@ -104,7 +107,7 @@ class ChatServiceTest {
 
       Assertions.assertThat(chatService.getConversations(USER_ID))
           .extracting(Conversation::id)
-          .contains(first.id(), second.id());
+          .contains(first.getConversationId(), second.getConversationId());
     }
 
     @Test
@@ -119,12 +122,12 @@ class ChatServiceTest {
 
     @Test
     void returnsMessagesInChronologicalOrder() {
-      var conversation = chatService.createConversation(
+      var firstMessage = chatService.createConversation(
           new CreateConversationCommand(USER_ID, "Chat", "first"));
       chatService.sendMessage(
-          new SendMessageCommand(conversation.id(), USER_ID, "second", AuthorType.AI));
+          new SendMessageCommand(firstMessage.getConversationId(), USER_ID, "second", AuthorType.AI));
 
-      Assertions.assertThat(chatService.getMessages(conversation.id(), USER_ID))
+      Assertions.assertThat(chatService.getMessages(firstMessage.getConversationId(), USER_ID))
           .extracting(ChatMessage::getContent)
           .containsExactly("first", "second");
     }
@@ -139,10 +142,10 @@ class ChatServiceTest {
 
     @Test
     void throwsWhenConversationBelongsToAnotherUser() {
-      var conversation = chatService.createConversation(
+      var message = chatService.createConversation(
           new CreateConversationCommand(USER_ID, "Chat", "hi"));
 
-      Assertions.assertThatThrownBy(() -> chatService.getMessages(conversation.id(), OTHER_USER_ID))
+      Assertions.assertThatThrownBy(() -> chatService.getMessages(message.getConversationId(), OTHER_USER_ID))
           .isInstanceOf(ConversationNotFound.class);
     }
   }
@@ -152,13 +155,13 @@ class ChatServiceTest {
 
     @Test
     void persistsMessageAndPublishesEvent() {
-      var conversation = chatService.createConversation(
+      var message = chatService.createConversation(
           new CreateConversationCommand(USER_ID, "Chat", "hi"));
 
       chatService.sendMessage(
-          new SendMessageCommand(conversation.id(), USER_ID, "answer", AuthorType.AI));
+          new SendMessageCommand(message.getConversationId(), USER_ID, "answer", AuthorType.AI));
 
-      Assertions.assertThat(chatRepository.findMessages(conversation.id()))
+      Assertions.assertThat(chatRepository.findMessages(message.getConversationId()))
           .extracting(ChatMessage::getContent)
           .contains("answer");
 
@@ -182,12 +185,12 @@ class ChatServiceTest {
 
     @Test
     void throwsAndPublishesNothingWhenConversationBelongsToAnotherUser() {
-      var conversation = chatService.createConversation(
+      var message = chatService.createConversation(
           new CreateConversationCommand(USER_ID, "Chat", "hi"));
       events.clear();
 
       Assertions.assertThatThrownBy(() -> chatService.sendMessage(
-              new SendMessageCommand(conversation.id(), OTHER_USER_ID, "x", AuthorType.USER)))
+              new SendMessageCommand(message.getConversationId(), OTHER_USER_ID, "x", AuthorType.USER)))
           .isInstanceOf(ConversationNotFound.class);
 
       Assertions.assertThat(events.stream(MessageCreatedEvent.class))

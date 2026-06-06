@@ -39,22 +39,23 @@ public class ChatController {
   }
 
   @PostMapping
-  public ConversationResponse createConversation(
+  public MessageResponse createConversation(
       @AuthenticationPrincipal User user, @Valid @RequestBody CreateConversationRequest request) {
 
     var command = new CreateConversationCommand(user.getId(), request.title(), request.content());
-    var conversation = chatService.createConversation(command);
-    return ConversationResponse.from(conversation);
+    var message = chatService.createConversation(command);
+    return MessageResponse.from(message);
   }
 
   @PostMapping("/{conversationId}/messages")
-  public void sendMessage(
+  public MessageResponse sendMessage(
       @PathVariable String conversationId,
       @AuthenticationPrincipal User user,
       @Valid @RequestBody SendMessageRequest request) {
 
     var command = new SendMessageCommand(conversationId, user.getId(), request.content(), AuthorType.USER);
-    chatService.sendMessage(command);
+    var message = chatService.sendMessage(command);
+    return MessageResponse.from(message);
   }
 
   @GetMapping("/{conversationId}/messages")

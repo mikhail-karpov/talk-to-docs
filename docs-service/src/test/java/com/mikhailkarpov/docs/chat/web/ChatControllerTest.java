@@ -41,6 +41,9 @@ class ChatControllerTest {
 
   private static final String USER_ID = "101";
 
+  private static final ChatMessage MOCK_MESSAGE = new ChatMessage(
+      "msg-id", "conv-id", USER_ID, AuthorType.USER, "hi", Instant.parse("2023-01-01T10:20:30Z"));
+
 
   @Nested
   class GetConversationsTest {
@@ -72,7 +75,7 @@ class ChatControllerTest {
     @WithMockAuthenticatedUser
     void returnsConversationId_whenAuthenticated() throws Exception {
       when(chatService.createConversation(any(CreateConversationCommand.class)))
-          .thenReturn(new Conversation("new-conv-id", USER_ID, "Untitled", Instant.now()));
+          .thenReturn(MOCK_MESSAGE);
 
       mockMvc.perform(post("/api/v1/chat")
               .contentType(MediaType.APPLICATION_JSON)
@@ -80,7 +83,7 @@ class ChatControllerTest {
                   {"content": "hello world"}
                   """))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$.id").value("new-conv-id"));
+          .andExpect(jsonPath("$.id").value("msg-id"));
     }
 
     @Test
@@ -126,6 +129,9 @@ class ChatControllerTest {
     @Test
     @WithMockAuthenticatedUser
     void returns200_whenValidRequest() throws Exception {
+      when(chatService.sendMessage(any(SendMessageCommand.class)))
+          .thenReturn(MOCK_MESSAGE);
+
       mockMvc.perform(post("/api/v1/chat/conv-id/messages")
               .contentType(MediaType.APPLICATION_JSON)
               .content("""
@@ -196,8 +202,7 @@ class ChatControllerTest {
     @WithMockAuthenticatedUser
     void returnsMessages_whenAuthenticated() throws Exception {
       when(chatService.getMessages("conv-id", USER_ID))
-          .thenReturn(List.of(new ChatMessage(
-              "msg-id", "conv-id", USER_ID, AuthorType.USER, "hi", Instant.parse("2023-01-01T10:20:30Z"))));
+          .thenReturn(List.of(MOCK_MESSAGE));
 
       mockMvc.perform(get("/api/v1/chat/conv-id/messages"))
           .andExpect(status().isOk())

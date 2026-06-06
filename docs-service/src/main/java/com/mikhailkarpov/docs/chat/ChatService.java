@@ -26,7 +26,7 @@ public class ChatService {
   }
 
   @Transactional
-  public Conversation createConversation(CreateConversationCommand command) {
+  public ChatMessage createConversation(CreateConversationCommand command) {
 
     var conversation = new Conversation(
         UUID.randomUUID().toString(),
@@ -46,7 +46,7 @@ public class ChatService {
 
     eventPublisher.publishEvent(new MessageCreatedEvent(message));
     log.info("Created conversation: {}", conversation);
-    return conversation;
+    return message;
   }
 
   public List<Conversation> getConversations(String userId) {
@@ -61,7 +61,7 @@ public class ChatService {
   }
 
   @Transactional
-  public void sendMessage(SendMessageCommand command) {
+  public ChatMessage sendMessage(SendMessageCommand command) {
     if (chatRepository.findConversation(command.userId(), command.conversationId()).isEmpty()) {
       throw ConversationNotFound.of(command.conversationId());
     }
@@ -76,5 +76,6 @@ public class ChatService {
     chatRepository.addMessage(message);
     eventPublisher.publishEvent(new MessageCreatedEvent(message));
     log.info("Created message: {}", message);
+    return message;
   }
 }
