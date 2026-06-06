@@ -1,7 +1,9 @@
 package com.mikhailkarpov.docs.chat;
 
 import com.mikhailkarpov.docs.chat.command.CreateConversationCommand;
+import com.mikhailkarpov.docs.chat.command.RenameConversationCommand;
 import com.mikhailkarpov.docs.chat.command.SendMessageCommand;
+import com.mikhailkarpov.docs.chat.event.ConversationCreatedEvent;
 import com.mikhailkarpov.docs.chat.event.MessageCreatedEvent;
 import java.time.Instant;
 import java.util.List;
@@ -45,8 +47,15 @@ public class ChatService {
     chatRepository.addMessage(message);
 
     eventPublisher.publishEvent(new MessageCreatedEvent(message));
+    eventPublisher.publishEvent(new ConversationCreatedEvent(conversation, message));
     log.info("Created conversation: {}", conversation);
     return message;
+  }
+
+  @Transactional
+  public void renameConversation(RenameConversationCommand command) {
+    chatRepository.updateTitle(command.conversationId(), command.userId(), command.title());
+    log.info("Renamed conversation {} to: {}", command.conversationId(), command.title());
   }
 
   public List<Conversation> getConversations(String userId) {

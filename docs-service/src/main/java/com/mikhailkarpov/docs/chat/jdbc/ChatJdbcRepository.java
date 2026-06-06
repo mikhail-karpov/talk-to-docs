@@ -35,6 +35,12 @@ public class ChatJdbcRepository implements ChatRepository {
     WHERE id = :id AND user_id = :userId;
     """;
 
+  private static final String UPDATE_CONVERSATION_TITLE = """
+    UPDATE conversations
+    SET title = :title
+    WHERE id = :id AND user_id = :userId;
+    """;
+
   private static final String INSERT_MESSAGE = """
     INSERT INTO chat_messages
         (id, conversation_id, user_id, author_type, content, created_at)
@@ -64,6 +70,15 @@ public class ChatJdbcRepository implements ChatRepository {
         .param("userId", UUID.fromString(conversation.userId()))
         .param("title", conversation.title())
         .param("createdAt", Timestamp.from(conversation.createdAt()))
+        .update();
+  }
+
+  @Override
+  public void updateTitle(String conversationId, String userId, String title) {
+    jdbcClient.sql(UPDATE_CONVERSATION_TITLE)
+        .param("id", UUID.fromString(conversationId))
+        .param("userId", UUID.fromString(userId))
+        .param("title", title)
         .update();
   }
 

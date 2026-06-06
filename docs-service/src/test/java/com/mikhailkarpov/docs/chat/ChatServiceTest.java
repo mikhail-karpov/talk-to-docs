@@ -2,7 +2,9 @@ package com.mikhailkarpov.docs.chat;
 
 import com.mikhailkarpov.docs.TestcontainersConfig;
 import com.mikhailkarpov.docs.chat.command.CreateConversationCommand;
+import com.mikhailkarpov.docs.chat.command.RenameConversationCommand;
 import com.mikhailkarpov.docs.chat.command.SendMessageCommand;
+import com.mikhailkarpov.docs.chat.event.ConversationCreatedEvent;
 import com.mikhailkarpov.docs.chat.event.MessageCreatedEvent;
 import com.mikhailkarpov.docs.chat.jdbc.ChatJdbcRepository;
 import java.util.UUID;
@@ -75,6 +77,21 @@ class ChatServiceTest {
     }
 
     @Test
+    void publishesConversationCreatedEventCarryingConversationAndFirstMessage() {
+      var message = chatService.createConversation(
+          new CreateConversationCommand(USER_ID, null, "Hello there"));
+
+      Assertions.assertThat(events.stream(ConversationCreatedEvent.class))
+          .singleElement()
+          .satisfies(e -> {
+            Assertions.assertThat(e.conversation().id()).isEqualTo(message.getConversationId());
+            Assertions.assertThat(e.conversation().userId()).isEqualTo(USER_ID);
+            Assertions.assertThat(e.conversation().title()).isEqualTo("Untitled");
+            Assertions.assertThat(e.firstMessage().getContent()).isEqualTo("Hello there");
+          });
+    }
+
+    @Test
     void defaultsTitleWhenBlank() {
       var message = chatService.createConversation(
           new CreateConversationCommand(USER_ID, "  ", "Hi"));
@@ -88,6 +105,36 @@ class ChatServiceTest {
     void defaultsTitleWhenNull() {
       var message = chatService.createConversation(
           new CreateConversationCommand(USER_ID, null, "Hi"));
+
+      Assertions.assertThat(chatRepository.findConversation(USER_ID, message.getConversationId()))
+          .isPresent().get()
+          .returns("Untitled", Conversation::title);
+    }
+  }
+
+  @Nested
+  class RenameConversation {
+
+    @Test
+    void persistsNewTitle() {
+      var message = chatService.createConversation(
+          new CreateConversationCommand(USER_ID, null, "hi"));
+
+      chatService.renameConversation(
+          new RenameConversationCommand(message.getConversationId(), USER_ID, "Generated title"));
+
+      Assertions.assertThat(chatRepository.findConversation(USER_ID, message.getConversationId()))
+          .isPresent().get()
+          .returns("Generated title", Conversation::title);
+    }
+
+    @Test
+    void doesNotRenameConversationOfAnotherUser() {
+      var message = chatService.createConversation(
+          new CreateConversationCommand(USER_ID, null, "hi"));
+
+      chatService.renameConversation(
+          new RenameConversationCommand(message.getConversationId(), OTHER_USER_ID, "Hacked"));
 
       Assertions.assertThat(chatRepository.findConversation(USER_ID, message.getConversationId()))
           .isPresent().get()
