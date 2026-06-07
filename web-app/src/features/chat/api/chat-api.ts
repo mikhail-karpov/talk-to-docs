@@ -10,3 +10,12 @@ export async function createChat(body: { content: string }): Promise<Message> {
   const { data } = await api.post<Message>('/api/v1/chat', body)
   return data
 }
+
+export async function deleteChat(id: string): Promise<void> {
+  await api.delete(`/api/v1/chat/${id}`)
+}
+
+export async function renameChat(id: string, title: string): Promise<Chat> {
+  const { data } = await api.put<Chat>(`/api/v1/chat/${id}`, { title })
+  return data
+}
