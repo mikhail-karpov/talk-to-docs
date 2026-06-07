@@ -19,6 +19,8 @@ src
 |   |
 |   +-- auth                # authentication
 |   +-- chat                # chat
+|   +-- documents           # documents management
+|   +-- websocket           # websocket management
 |
 +-- hooks             # shared hooks used across the entire application
 |
