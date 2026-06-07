@@ -1,6 +1,7 @@
 package com.mikhailkarpov.docs.chat;
 
 import com.mikhailkarpov.docs.TestcontainersConfig;
+import com.mikhailkarpov.docs.chat.command.ConversationQuery;
 import com.mikhailkarpov.docs.chat.command.CreateConversationCommand;
 import com.mikhailkarpov.docs.chat.command.DeleteConversationCommand;
 import com.mikhailkarpov.docs.chat.command.RenameConversationCommand;
@@ -8,6 +9,10 @@ import com.mikhailkarpov.docs.chat.command.SendMessageCommand;
 import com.mikhailkarpov.docs.chat.event.ConversationCreatedEvent;
 import com.mikhailkarpov.docs.chat.event.MessageCreatedEvent;
 import com.mikhailkarpov.docs.chat.jdbc.ChatJdbcRepository;
+import com.mikhailkarpov.docs.projects.Project;
+import com.mikhailkarpov.docs.projects.ProjectId;
+import com.mikhailkarpov.docs.projects.jdbc.JdbcProjectRepository;
+import java.time.Instant;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,6 +33,7 @@ class ChatServiceTest {
 
   // Seeded by db/seed/V3__insert_test_users.sql; required by the conversations.user_id FK.
   private static final String USER_ID = "2686f7a3-bd4a-4938-93a7-fe8e9360eb28";
+  private static final String PROJECT_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
   private static final String OTHER_USER_ID = UUID.randomUUID().toString();
 
   @Autowired
@@ -44,9 +50,12 @@ class ChatServiceTest {
 
   @BeforeEach
   void setUp() {
-    this.events.clear();
-    this.chatRepository = new ChatJdbcRepository(jdbcClient);
-    this.chatService = new ChatService(chatRepository, eventPublisher);
+    events.clear();
+    chatRepository = new ChatJdbcRepository(jdbcClient);
+    var projectRepository = new JdbcProjectRepository(jdbcClient);
+
+    chatService = new ChatService(chatRepository, projectRepository, eventPublisher);
+    projectRepository.addProject(new Project(PROJECT_ID, USER_ID, "Test Project", null, Instant.now()));
   }
 
   @Nested
@@ -54,7 +63,7 @@ class ChatServiceTest {
 
     @Test
     void persistsConversationWithFirstMessageAndPublishesEvent() {
-      var command = new CreateConversationCommand(USER_ID, "My chat", "Hello there");
+      var command = new CreateConversationCommand(new ProjectId(PROJECT_ID, USER_ID), "My chat", "Hello there");
 
       var message = chatService.createConversation(command);
 
@@ -80,7 +89,7 @@ class ChatServiceTest {
     @Test
     void publishesConversationCreatedEventCarryingConversationAndFirstMessage() {
       var message = chatService.createConversation(
-          new CreateConversationCommand(USER_ID, null, "Hello there"));
+          new CreateConversationCommand(new ProjectId(PROJECT_ID, USER_ID), null, "Hello there"));
 
       Assertions.assertThat(events.stream(ConversationCreatedEvent.class))
           .singleElement()
@@ -95,7 +104,7 @@ class ChatServiceTest {
     @Test
     void defaultsTitleWhenBlank() {
       var message = chatService.createConversation(
-          new CreateConversationCommand(USER_ID, "  ", "Hi"));
+          new CreateConversationCommand(new ProjectId(PROJECT_ID, USER_ID), "  ", "Hi"));
 
       Assertions.assertThat(chatRepository.findConversation(USER_ID, message.getConversationId()))
           .isPresent().get()
@@ -105,7 +114,7 @@ class ChatServiceTest {
     @Test
     void defaultsTitleWhenNull() {
       var message = chatService.createConversation(
-          new CreateConversationCommand(USER_ID, null, "Hi"));
+          new CreateConversationCommand(new ProjectId(PROJECT_ID, USER_ID), null, "Hi"));
 
       Assertions.assertThat(chatRepository.findConversation(USER_ID, message.getConversationId()))
           .isPresent().get()
@@ -119,7 +128,7 @@ class ChatServiceTest {
     @Test
     void persistsNewTitleAndReturnsUpdatedConversation() {
       var message = chatService.createConversation(
-          new CreateConversationCommand(USER_ID, null, "hi"));
+          new CreateConversationCommand(new ProjectId(PROJECT_ID, USER_ID), null, "hi"));
 
       var renamed = chatService.renameConversation(
           new RenameConversationCommand(message.getConversationId(), USER_ID, "Generated title"));
@@ -137,7 +146,7 @@ class ChatServiceTest {
     @Test
     void throwsWhenConversationBelongsToAnotherUser() {
       var message = chatService.createConversation(
-          new CreateConversationCommand(USER_ID, null, "hi"));
+          new CreateConversationCommand(new ProjectId(PROJECT_ID, USER_ID), null, "hi"));
 
       Assertions.assertThatThrownBy(() -> chatService.renameConversation(
               new RenameConversationCommand(message.getConversationId(), OTHER_USER_ID, "Hacked")))
@@ -164,7 +173,7 @@ class ChatServiceTest {
     @Test
     void deletesConversationAndCascadesMessages() {
       var message = chatService.createConversation(
-          new CreateConversationCommand(USER_ID, "Chat", "hi"));
+          new CreateConversationCommand(new ProjectId(PROJECT_ID, USER_ID), "Chat", "hi"));
       var conversationId = message.getConversationId();
 
       chatService.deleteConversation(new DeleteConversationCommand(conversationId, USER_ID));
@@ -176,7 +185,7 @@ class ChatServiceTest {
     @Test
     void throwsWhenConversationBelongsToAnotherUser() {
       var message = chatService.createConversation(
-          new CreateConversationCommand(USER_ID, null, "hi"));
+          new CreateConversationCommand(new ProjectId(PROJECT_ID, USER_ID), null, "hi"));
 
       Assertions.assertThatThrownBy(() -> chatService.deleteConversation(
               new DeleteConversationCommand(message.getConversationId(), OTHER_USER_ID)))
@@ -201,19 +210,35 @@ class ChatServiceTest {
 
     @Test
     void returnsConversationsForUserNewestFirst() {
-      var first = chatService.createConversation(
-          new CreateConversationCommand(USER_ID, "First", "1"));
-      var second = chatService.createConversation(
-          new CreateConversationCommand(USER_ID, "Second", "2"));
+      var query = new ConversationQuery(USER_ID, null);
 
-      Assertions.assertThat(chatService.getConversations(USER_ID))
+      var first = chatService.createConversation(
+          new CreateConversationCommand(new ProjectId(PROJECT_ID, USER_ID), "First", "1"));
+      var second = chatService.createConversation(
+          new CreateConversationCommand(new ProjectId(PROJECT_ID, USER_ID), "Second", "2"));
+
+      Assertions.assertThat(chatService.getConversations(query))
           .extracting(Conversation::id)
           .contains(first.getConversationId(), second.getConversationId());
     }
 
     @Test
+    void returnsConversationsByProject() {
+      var query = new ConversationQuery(USER_ID, PROJECT_ID);
+
+      var first = chatService.createConversation(
+          new CreateConversationCommand(new ProjectId(PROJECT_ID, USER_ID), "First", "1"));
+
+      Assertions.assertThat(chatService.getConversations(query))
+          .extracting(Conversation::id)
+          .contains(first.getConversationId());
+    }
+
+    @Test
     void returnsEmptyListWhenUserHasNoConversations() {
-      Assertions.assertThat(chatService.getConversations(OTHER_USER_ID))
+      var query = new ConversationQuery(OTHER_USER_ID, null);
+
+      Assertions.assertThat(chatService.getConversations(query))
           .isEmpty();
     }
   }
@@ -224,7 +249,7 @@ class ChatServiceTest {
     @Test
     void returnsMessagesInChronologicalOrder() {
       var firstMessage = chatService.createConversation(
-          new CreateConversationCommand(USER_ID, "Chat", "first"));
+          new CreateConversationCommand(new ProjectId(PROJECT_ID, USER_ID), "Chat", "first"));
       chatService.sendMessage(
           new SendMessageCommand(firstMessage.getConversationId(), USER_ID, "second", AuthorType.AI));
 
@@ -244,7 +269,7 @@ class ChatServiceTest {
     @Test
     void throwsWhenConversationBelongsToAnotherUser() {
       var message = chatService.createConversation(
-          new CreateConversationCommand(USER_ID, "Chat", "hi"));
+          new CreateConversationCommand(new ProjectId(PROJECT_ID, USER_ID), "Chat", "hi"));
 
       Assertions.assertThatThrownBy(() -> chatService.getMessages(message.getConversationId(), OTHER_USER_ID))
           .isInstanceOf(ConversationNotFound.class);
@@ -257,7 +282,7 @@ class ChatServiceTest {
     @Test
     void persistsMessageAndPublishesEvent() {
       var message = chatService.createConversation(
-          new CreateConversationCommand(USER_ID, "Chat", "hi"));
+          new CreateConversationCommand(new ProjectId(PROJECT_ID, USER_ID), "Chat", "hi"));
 
       chatService.sendMessage(
           new SendMessageCommand(message.getConversationId(), USER_ID, "answer", AuthorType.AI));
@@ -287,7 +312,7 @@ class ChatServiceTest {
     @Test
     void throwsAndPublishesNothingWhenConversationBelongsToAnotherUser() {
       var message = chatService.createConversation(
-          new CreateConversationCommand(USER_ID, "Chat", "hi"));
+          new CreateConversationCommand(new ProjectId(PROJECT_ID, USER_ID), "Chat", "hi"));
       events.clear();
 
       Assertions.assertThatThrownBy(() -> chatService.sendMessage(

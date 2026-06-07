@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.mikhailkarpov.docs.auth.UserService;
 import com.mikhailkarpov.docs.chat.AuthorType;
+import com.mikhailkarpov.docs.chat.command.ConversationQuery;
 import com.mikhailkarpov.docs.chat.command.CreateConversationCommand;
 import com.mikhailkarpov.docs.chat.command.DeleteConversationCommand;
 import com.mikhailkarpov.docs.chat.command.RenameConversationCommand;
@@ -20,6 +21,7 @@ import com.mikhailkarpov.docs.chat.ChatMessage;
 import com.mikhailkarpov.docs.chat.ChatService;
 import com.mikhailkarpov.docs.chat.Conversation;
 import com.mikhailkarpov.docs.chat.ConversationNotFound;
+import com.mikhailkarpov.docs.projects.ProjectId;
 import com.mikhailkarpov.docs.config.RestControllerTest;
 import com.mikhailkarpov.docs.config.WithMockAuthenticatedUser;
 import java.time.Instant;
@@ -49,7 +51,7 @@ class ChatControllerTest {
       "msg-id", "conv-id", USER_ID, AuthorType.USER, "hi", Instant.parse("2023-01-01T10:20:30Z"));
 
   private static final Conversation MOCK_CONVERSATION =
-      new Conversation("conv-id", USER_ID, "Test Chat", Instant.parse("2023-01-01T10:20:30Z"));
+      new Conversation("conv-id", new ProjectId("project-id", USER_ID), "Test Chat", Instant.parse("2023-01-01T10:20:30Z"));
 
 
   @Nested
@@ -58,10 +60,26 @@ class ChatControllerTest {
     @Test
     @WithMockAuthenticatedUser
     void returnsConversations_whenAuthenticated() throws Exception {
-      when(chatService.getConversations(USER_ID))
+      var query = new ConversationQuery(WithMockAuthenticatedUser.TEST_USER_ID, null);
+
+      when(chatService.getConversations(query))
           .thenReturn(List.of(MOCK_CONVERSATION));
 
       mockMvc.perform(get("/api/v1/chat"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.items[0].id").value("conv-id"))
+          .andExpect(jsonPath("$.items[0].createdAt").value("2023-01-01T10:20:30Z"));
+    }
+
+    @Test
+    @WithMockAuthenticatedUser
+    void returnsConversations_ByProjectId() throws Exception {
+      var query = new ConversationQuery(WithMockAuthenticatedUser.TEST_USER_ID, "project-id");
+
+      when(chatService.getConversations(query))
+          .thenReturn(List.of(MOCK_CONVERSATION));
+
+      mockMvc.perform(get("/api/v1/chat?projectId=project-id"))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.items[0].id").value("conv-id"))
           .andExpect(jsonPath("$.items[0].createdAt").value("2023-01-01T10:20:30Z"));
@@ -87,7 +105,7 @@ class ChatControllerTest {
       mockMvc.perform(post("/api/v1/chat")
               .contentType(MediaType.APPLICATION_JSON)
               .content("""
-                  {"content": "hello world"}
+                  {"projectId": "project-id", "content": "hello world"}
                   """))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.id").value("msg-id"));

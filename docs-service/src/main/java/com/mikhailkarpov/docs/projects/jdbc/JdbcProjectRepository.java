@@ -40,6 +40,12 @@ public class JdbcProjectRepository implements ProjectRepository {
       WHERE id = :id AND user_id = :userId;
       """;
 
+  private static final String EXISTS_PROJECT = """
+      SELECT EXISTS(
+          SELECT 1 FROM project WHERE id = :id AND user_id = :userId
+      );
+      """;
+
   private static final String DELETE_PROJECT = """
       DELETE FROM project
       WHERE id = :id AND user_id = :userId;
@@ -62,6 +68,15 @@ public class JdbcProjectRepository implements ProjectRepository {
         .param("updatedAt", Timestamp.from(project.updatedAt()))
         .update();
   }
+
+  @Override
+  public boolean exists(ProjectId projectId) {
+    return jdbcClient.sql(EXISTS_PROJECT)
+          .param("id", UUID.fromString(projectId.id()))
+          .param("userId", UUID.fromString(projectId.userId()))
+          .query(Boolean.class)
+          .single();
+}
 
   @Override
   public Optional<Project> findProject(ProjectId projectId) {

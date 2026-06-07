@@ -3,7 +3,7 @@ package com.mikhailkarpov.docs.chat.web;
 import com.mikhailkarpov.docs.auth.User;
 import com.mikhailkarpov.docs.chat.AuthorType;
 import com.mikhailkarpov.docs.chat.ChatService;
-import com.mikhailkarpov.docs.chat.command.CreateConversationCommand;
+import com.mikhailkarpov.docs.chat.command.ConversationQuery;
 import com.mikhailkarpov.docs.chat.command.DeleteConversationCommand;
 import com.mikhailkarpov.docs.chat.command.RenameConversationCommand;
 import com.mikhailkarpov.docs.chat.command.SendMessageCommand;
@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -34,9 +35,10 @@ public class ChatController {
 
   @GetMapping
   public Map<String, List<ConversationResponse>> getConversations(
-      @AuthenticationPrincipal User user) {
+      @AuthenticationPrincipal User user, @RequestParam(required = false) String projectId) {
 
-    var conversations = chatService.getConversations(user.getId())
+    var query = new ConversationQuery(user.getId(), projectId);
+    var conversations = chatService.getConversations(query)
         .stream()
         .map(ConversationResponse::from)
         .toList();
@@ -48,7 +50,7 @@ public class ChatController {
   public MessageResponse createConversation(
       @AuthenticationPrincipal User user, @Valid @RequestBody CreateConversationRequest request) {
 
-    var command = new CreateConversationCommand(user.getId(), request.title(), request.content());
+    var command = request.toCommand(user.getId());
     var message = chatService.createConversation(command);
     return MessageResponse.from(message);
   }

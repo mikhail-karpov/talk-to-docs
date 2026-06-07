@@ -12,6 +12,7 @@ import com.mikhailkarpov.docs.chat.ChatService;
 import com.mikhailkarpov.docs.chat.Conversation;
 import com.mikhailkarpov.docs.chat.command.RenameConversationCommand;
 import com.mikhailkarpov.docs.chat.event.ConversationCreatedEvent;
+import com.mikhailkarpov.docs.projects.ProjectId;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -26,6 +27,7 @@ class ConversationListenerTest {
 
   private final String conversationId = UUID.randomUUID().toString();
   private final String userId = UUID.randomUUID().toString();
+  private final ProjectId projectId = new ProjectId(UUID.randomUUID().toString(), userId);
   private final RenameConversationCommand COMMAND =
       new RenameConversationCommand(conversationId, userId, "Reset router");
 
@@ -39,7 +41,7 @@ class ConversationListenerTest {
   private ConversationListener listener;
 
   private ConversationCreatedEvent eventWithTitle(String title) {
-    var conversation = new Conversation(conversationId, userId, title, Instant.now());
+    var conversation = new Conversation(conversationId, projectId, title, Instant.now());
     var message = new ChatMessage(
         UUID.randomUUID().toString(),
         conversationId,

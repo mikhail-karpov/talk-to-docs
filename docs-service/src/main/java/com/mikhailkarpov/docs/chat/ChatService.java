@@ -1,11 +1,14 @@
 package com.mikhailkarpov.docs.chat;
 
+import com.mikhailkarpov.docs.chat.command.ConversationQuery;
 import com.mikhailkarpov.docs.chat.command.CreateConversationCommand;
 import com.mikhailkarpov.docs.chat.command.DeleteConversationCommand;
 import com.mikhailkarpov.docs.chat.command.RenameConversationCommand;
 import com.mikhailkarpov.docs.chat.command.SendMessageCommand;
 import com.mikhailkarpov.docs.chat.event.ConversationCreatedEvent;
 import com.mikhailkarpov.docs.chat.event.MessageCreatedEvent;
+import com.mikhailkarpov.docs.projects.ProjectNotFoundException;
+import com.mikhailkarpov.docs.projects.ProjectRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -21,19 +24,29 @@ public class ChatService {
   private static final Logger log = LoggerFactory.getLogger(ChatService.class);
 
   private final ChatRepository chatRepository;
+  private final ProjectRepository projectRepository;
   private final ApplicationEventPublisher eventPublisher;
 
-  public ChatService(ChatRepository chatRepository, ApplicationEventPublisher eventPublisher) {
+  public ChatService(
+      ChatRepository chatRepository,
+      ProjectRepository projectRepository,
+      ApplicationEventPublisher eventPublisher) {
+
     this.chatRepository = chatRepository;
+    this.projectRepository = projectRepository;
     this.eventPublisher = eventPublisher;
   }
 
   @Transactional
   public ChatMessage createConversation(CreateConversationCommand command) {
 
+    if (!projectRepository.exists(command.projectId())) {
+      throw ProjectNotFoundException.of(command.projectId());
+    }
+
     var conversation = new Conversation(
         UUID.randomUUID().toString(),
-        command.userId(),
+        command.projectId(),
         command.title(),
         Instant.now());
 
@@ -41,7 +54,7 @@ public class ChatService {
 
     var message = new ChatMessage(UUID.randomUUID().toString(),
         conversation.id(),
-        command.userId(),
+        command.projectId().userId(),
         AuthorType.USER,
         command.content(),
         Instant.now());
@@ -70,8 +83,8 @@ public class ChatService {
     log.info("Deleted conversation {}", command.conversationId());
   }
 
-  public List<Conversation> getConversations(String userId) {
-    return chatRepository.findConversations(userId);
+  public List<Conversation> getConversations(ConversationQuery query) {
+    return chatRepository.findConversations(query);
   }
 
   public List<ChatMessage> getMessages(String conversationId, String userId) {

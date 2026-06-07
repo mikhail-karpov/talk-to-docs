@@ -1,5 +1,6 @@
 package com.mikhailkarpov.docs.chat;
 
+import com.mikhailkarpov.docs.chat.command.ConversationQuery;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,7 +14,7 @@ public interface ChatRepository {
 
   void addMessage(ChatMessage message);
 
-  List<Conversation> findConversations(String userId);
+  List<Conversation> findConversations(ConversationQuery query);
 
   Optional<Conversation> findConversation(String userId, String conversationId);
 

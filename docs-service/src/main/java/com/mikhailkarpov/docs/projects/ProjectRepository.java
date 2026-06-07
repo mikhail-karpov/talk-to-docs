@@ -7,6 +7,8 @@ public interface ProjectRepository {
 
   void addProject(Project project);
 
+  boolean exists(ProjectId projectId);
+
   Optional<Project> findProject(ProjectId projectId);
 
   List<Project> findProjects(String userId);

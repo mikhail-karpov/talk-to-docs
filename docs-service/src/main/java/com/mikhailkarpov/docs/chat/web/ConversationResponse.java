@@ -8,7 +8,7 @@ public record ConversationResponse(String id, String userId, String title, Insta
   public static ConversationResponse from(Conversation conversation) {
     return new ConversationResponse(
         conversation.id(),
-        conversation.userId(),
+        conversation.projectId().userId(),
         conversation.title(),
         conversation.createdAt()
     );
