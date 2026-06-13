@@ -1,16 +1,19 @@
 package com.mikhailkarpov.docs.documents;
 
+import com.mikhailkarpov.docs.documents.command.DocumentQuery;
+import com.mikhailkarpov.docs.documents.command.UploadDocumentCommand;
 import com.mikhailkarpov.docs.documents.event.DocumentCreatedEvent;
 import com.mikhailkarpov.docs.documents.event.DocumentDeletedEvent;
 import com.mikhailkarpov.docs.documents.event.DocumentUpdatedEvent;
 import com.mikhailkarpov.docs.documents.web.DocumentStatus;
+import com.mikhailkarpov.docs.projects.ProjectNotFoundException;
+import com.mikhailkarpov.docs.projects.ProjectRepository;
 import java.io.IOException;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,20 +23,28 @@ public class DocumentService {
   private static final Logger log = LoggerFactory.getLogger(DocumentService.class);
 
   private final DocumentRepository documentRepository;
+  private final ProjectRepository projectRepository;
   private final ApplicationEventPublisher eventPublisher;
 
   public DocumentService(
-      DocumentRepository documentRepository, ApplicationEventPublisher eventPublisher) {
+      DocumentRepository documentRepository,
+      ProjectRepository projectRepository,
+      ApplicationEventPublisher eventPublisher) {
 
     this.documentRepository = documentRepository;
+    this.projectRepository = projectRepository;
     this.eventPublisher = eventPublisher;
   }
 
   @Transactional
-  public DocumentMetadata uploadDocument(String userId, Resource resource, String contentType) {
+  public DocumentMetadata uploadDocument(UploadDocumentCommand command) {
 
-    try (var inputStream = resource.getInputStream()) {
-      var filename = resource.getFilename();
+    if (!projectRepository.exists(command.projectId())) {
+      throw ProjectNotFoundException.of(command.projectId());
+    }
+
+    try (var inputStream = command.resource().getInputStream()) {
+      var filename = command.resource().getFilename();
       var bytes = inputStream.readAllBytes();
       var stableResource = new ByteArrayResource(bytes) {
         @Override
@@ -42,9 +53,10 @@ public class DocumentService {
         }
       };
       var uploadedDocument = DocumentMetadata.builder()
-          .userId(userId)
+          .userId(command.projectId().userId())
+          .projectId(command.projectId().id())
           .name(filename)
-          .contentType(contentType)
+          .contentType(command.contentType())
           .sizeBytes(bytes.length)
           .status(DocumentStatus.UPLOADED)
           .build();
@@ -62,8 +74,8 @@ public class DocumentService {
     return this.getDocumentOrThrow(documentId, userId);
   }
 
-  public List<DocumentMetadata> findDocuments(String userId) {
-    return documentRepository.findDocuments(userId);
+  public List<DocumentMetadata> findDocuments(DocumentQuery query) {
+    return documentRepository.findDocuments(query);
   }
 
   @Transactional

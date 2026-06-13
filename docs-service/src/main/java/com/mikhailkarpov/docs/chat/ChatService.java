@@ -60,7 +60,7 @@ public class ChatService {
         Instant.now());
     chatRepository.addMessage(message);
 
-    eventPublisher.publishEvent(new MessageCreatedEvent(message));
+    eventPublisher.publishEvent(new MessageCreatedEvent(conversation, message));
     eventPublisher.publishEvent(new ConversationCreatedEvent(conversation, message));
     log.info("Created conversation: {}", conversation);
     return message;
@@ -87,6 +87,11 @@ public class ChatService {
     return chatRepository.findConversations(query);
   }
 
+  public Conversation getConversation(String userId, String conversationId) {
+    return chatRepository.findConversation(userId, conversationId)
+        .orElseThrow(() -> ConversationNotFound.of(conversationId));
+  }
+
   public List<ChatMessage> getMessages(String conversationId, String userId) {
     if (chatRepository.findConversation(userId, conversationId).isEmpty()) {
       throw ConversationNotFound.of(conversationId);
@@ -96,7 +101,8 @@ public class ChatService {
 
   @Transactional
   public ChatMessage sendMessage(SendMessageCommand command) {
-    if (chatRepository.findConversation(command.userId(), command.conversationId()).isEmpty()) {
+    var conversation = chatRepository.findConversation(command.userId(), command.conversationId());
+    if (conversation.isEmpty()) {
       throw ConversationNotFound.of(command.conversationId());
     }
 
@@ -108,7 +114,7 @@ public class ChatService {
         command.content(),
         Instant.now());
     chatRepository.addMessage(message);
-    eventPublisher.publishEvent(new MessageCreatedEvent(message));
+    eventPublisher.publishEvent(new MessageCreatedEvent(conversation.get(), message));
     log.info("Created message: {}", message);
     return message;
   }

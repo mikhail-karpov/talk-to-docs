@@ -83,7 +83,9 @@ class ChatServiceTest {
 
       Assertions.assertThat(events.stream(MessageCreatedEvent.class))
           .singleElement()
-          .returns("Hello there", e -> e.message().getContent());
+          .returns("Hello there", e -> e.message().getContent())
+          .returns(message.getConversationId(), e -> e.conversation().id())
+          .returns("My chat", e -> e.conversation().title());
     }
 
     @Test
@@ -244,6 +246,39 @@ class ChatServiceTest {
   }
 
   @Nested
+  class GetConversation {
+
+    @Test
+    void returnsConversationForOwner() {
+      var message = chatService.createConversation(
+          new CreateConversationCommand(new ProjectId(PROJECT_ID, USER_ID), "Chat", "hi"));
+
+      Assertions.assertThat(chatService.getConversation(USER_ID, message.getConversationId()))
+          .returns(message.getConversationId(), Conversation::id)
+          .returns(USER_ID, Conversation::userId)
+          .returns(PROJECT_ID, c -> c.projectId().id());
+    }
+
+    @Test
+    void throwsWhenConversationMissing() {
+      var missingId = UUID.randomUUID().toString();
+
+      Assertions.assertThatThrownBy(() -> chatService.getConversation(USER_ID, missingId))
+          .isInstanceOf(ConversationNotFound.class);
+    }
+
+    @Test
+    void throwsWhenConversationBelongsToAnotherUser() {
+      var message = chatService.createConversation(
+          new CreateConversationCommand(new ProjectId(PROJECT_ID, USER_ID), "Chat", "hi"));
+
+      Assertions.assertThatThrownBy(() ->
+              chatService.getConversation(OTHER_USER_ID, message.getConversationId()))
+          .isInstanceOf(ConversationNotFound.class);
+    }
+  }
+
+  @Nested
   class GetMessages {
 
     @Test
@@ -293,6 +328,8 @@ class ChatServiceTest {
 
       Assertions.assertThat(events.stream(MessageCreatedEvent.class))
           .hasSize(2)
+          .allSatisfy(e -> Assertions.assertThat(e.conversation().id())
+              .isEqualTo(message.getConversationId()))
           .map(e -> e.message().getContent())
           .containsExactly("hi", "answer");
     }

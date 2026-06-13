@@ -3,6 +3,7 @@ package com.mikhailkarpov.docs.ai;
 import com.mikhailkarpov.docs.chat.AuthorType;
 import com.mikhailkarpov.docs.chat.ChatMessage;
 import com.mikhailkarpov.docs.chat.ChatService;
+import com.mikhailkarpov.docs.chat.Conversation;
 import com.mikhailkarpov.docs.chat.event.MessageCreatedEvent;
 import com.mikhailkarpov.docs.chat.command.SendMessageCommand;
 import org.springframework.stereotype.Component;
@@ -24,12 +25,13 @@ public class AiMessageListener {
 
     var message = event.message();
     if (message.getAuthorType() == AuthorType.USER) {
-      reply(message);
+      reply(event.conversation(), message);
     }
   }
 
-  private void reply(ChatMessage message) {
-    aiAssistant.reply(message.getConversationId(), message.getUserId(), message.getContent())
+  private void reply(Conversation conversation, ChatMessage message) {
+    var projectId = conversation.projectId().id();
+    aiAssistant.reply(message.getConversationId(), projectId, message.getContent())
         .thenApply(reply -> new SendMessageCommand(
             message.getConversationId(),
             message.getUserId(),

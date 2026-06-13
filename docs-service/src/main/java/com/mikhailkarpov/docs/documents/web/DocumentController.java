@@ -2,6 +2,9 @@ package com.mikhailkarpov.docs.documents.web;
 
 import com.mikhailkarpov.docs.auth.User;
 import com.mikhailkarpov.docs.documents.DocumentService;
+import com.mikhailkarpov.docs.documents.command.DocumentQuery;
+import com.mikhailkarpov.docs.documents.command.UploadDocumentCommand;
+import com.mikhailkarpov.docs.projects.ProjectId;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
@@ -11,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -30,18 +34,21 @@ public class DocumentController {
   @PostMapping
   public DocumentResponse uploadDocument(
       @AuthenticationPrincipal User user,
+      @RequestParam String projectId,
       @FileConstraint(allowedTypes = {"text/markdown", "text/plain", "application/pdf"})
       @RequestPart(required = false) MultipartFile document) {
 
-    var doc = documentService.uploadDocument(user.getId(), document.getResource(), document.getContentType());
+    var command = new UploadDocumentCommand(
+        new ProjectId(projectId, user.getId()), document.getResource(), document.getContentType());
+    var doc = documentService.uploadDocument(command);
     return DocumentResponse.from(doc);
   }
 
   @GetMapping
   public Map<String, List<DocumentResponse>> getDocuments(
-      @AuthenticationPrincipal User user) {
+      @AuthenticationPrincipal User user, @RequestParam(required = false) String projectId) {
 
-    var documents = documentService.findDocuments(user.getId())
+    var documents = documentService.findDocuments(new DocumentQuery(user.getId(), projectId))
         .stream()
         .map(DocumentResponse::from)
         .toList();

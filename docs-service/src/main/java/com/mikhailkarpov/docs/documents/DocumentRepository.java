@@ -1,5 +1,6 @@
 package com.mikhailkarpov.docs.documents;
 
+import com.mikhailkarpov.docs.documents.command.DocumentQuery;
 import java.util.List;
 import java.util.Optional;
 
@@ -11,7 +12,8 @@ public interface DocumentRepository {
 
   Optional<DocumentMetadata> findDocument(String userId, String documentId);
 
-  List<DocumentMetadata> findDocuments(String userId);
+  List<DocumentMetadata> findDocuments(DocumentQuery query);
 
   void updateDocument(DocumentMetadata document);
+
 }

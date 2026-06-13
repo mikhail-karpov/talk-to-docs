@@ -15,5 +15,5 @@ public interface ProjectRepository {
 
   void updateProject(Project project);
 
-  boolean deleteProject(ProjectId projectId);
+  Optional<Project> deleteProject(ProjectId projectId);
 }

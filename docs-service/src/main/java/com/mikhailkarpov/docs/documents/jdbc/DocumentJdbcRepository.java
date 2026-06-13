@@ -2,6 +2,7 @@ package com.mikhailkarpov.docs.documents.jdbc;
 
 import com.mikhailkarpov.docs.documents.DocumentMetadata;
 import com.mikhailkarpov.docs.documents.DocumentRepository;
+import com.mikhailkarpov.docs.documents.command.DocumentQuery;
 import com.mikhailkarpov.docs.documents.web.DocumentStatus;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -9,6 +10,7 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Predicate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -18,25 +20,26 @@ public class DocumentJdbcRepository implements DocumentRepository {
 
   private static final String INSERT_DOCUMENT = """
     INSERT INTO documents
-        (id, user_id, name, content_type, size_bytes, status, updated_at)
+        (id, user_id, project_id, name, content_type, size_bytes, status, updated_at)
     VALUES
-        (:id, :userId, :name, :contentType, :sizeBytes, :status, :updatedAt);
+        (:id, :userId, :projectId, :name, :contentType, :sizeBytes, :status, :updatedAt);
     """;
 
   private static final String SELECT_DOCUMENT_BY_ID = """
     SELECT
-        id, user_id, name, content_type, size_bytes, status, updated_at
+        id, user_id, project_id, name, content_type, size_bytes, status, updated_at
     FROM documents
     WHERE
         id = :id AND user_id = :userId;
     """;
 
-  private static final String SELECT_DOCUMENTS_BY_USER = """
+  private static final String SELECT_DOCUMENTS = """
     SELECT
-        id, user_id, name, content_type, size_bytes, status, updated_at
+        id, user_id, project_id, name, content_type, size_bytes, status, updated_at
     FROM documents
     WHERE
         user_id = :userId
+        AND project_id = COALESCE(CAST(:projectId AS uuid), project_id)
     ORDER BY updated_at DESC;
     """;
 
@@ -53,7 +56,7 @@ public class DocumentJdbcRepository implements DocumentRepository {
     WHERE
         id = :id AND user_id = :userId
     RETURNING
-        id, user_id, name, content_type, size_bytes, status, updated_at;
+        id, user_id, project_id, name, content_type, size_bytes, status, updated_at;
     """;
 
   private final JdbcClient jdbcClient;
@@ -68,6 +71,7 @@ public class DocumentJdbcRepository implements DocumentRepository {
     jdbcClient.sql(INSERT_DOCUMENT)
         .param("id", UUID.fromString(document.getId()))
         .param("userId", UUID.fromString(document.getUserId()))
+        .param("projectId", UUID.fromString(document.getProjectId()))
         .param("name", document.getName())
         .param("contentType", document.getContentType())
         .param("sizeBytes", document.getSizeBytes())
@@ -95,9 +99,15 @@ public class DocumentJdbcRepository implements DocumentRepository {
   }
 
   @Override
-  public List<DocumentMetadata> findDocuments(String userId) {
-    return jdbcClient.sql(SELECT_DOCUMENTS_BY_USER)
-        .param("userId", UUID.fromString(userId))
+  public List<DocumentMetadata> findDocuments(DocumentQuery query) {
+    var projectId = Optional.ofNullable(query.projectId())
+        .filter(Predicate.not(String::isBlank))
+        .map(UUID::fromString)
+        .orElse(null);
+
+    return jdbcClient.sql(SELECT_DOCUMENTS)
+        .param("userId", UUID.fromString(query.userId()))
+        .param("projectId", projectId)
         .query(rowMapper)
         .list();
   }
@@ -120,6 +130,7 @@ public class DocumentJdbcRepository implements DocumentRepository {
       return DocumentMetadata.builder()
           .id(rs.getObject("id", UUID.class).toString())
           .userId(rs.getObject("user_id", UUID.class).toString())
+          .projectId(rs.getObject("project_id", UUID.class).toString())
           .name(rs.getString("name"))
           .contentType(rs.getString("content_type"))
           .sizeBytes(rs.getLong("size_bytes"))

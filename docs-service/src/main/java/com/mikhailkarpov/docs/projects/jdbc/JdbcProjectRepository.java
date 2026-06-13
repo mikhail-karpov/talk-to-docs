@@ -48,7 +48,8 @@ public class JdbcProjectRepository implements ProjectRepository {
 
   private static final String DELETE_PROJECT = """
       DELETE FROM project
-      WHERE id = :id AND user_id = :userId;
+      WHERE id = :id AND user_id = :userId
+      RETURNING *;
       """;
 
   private final JdbcClient jdbcClient;
@@ -107,11 +108,12 @@ public class JdbcProjectRepository implements ProjectRepository {
   }
 
   @Override
-  public boolean deleteProject(ProjectId projectId) {
+  public Optional<Project> deleteProject(ProjectId projectId) {
     return jdbcClient.sql(DELETE_PROJECT)
         .param("id", UUID.fromString(projectId.id()))
         .param("userId", UUID.fromString(projectId.userId()))
-        .update() > 0;
+        .query(rowMapper)
+        .optional();
   }
 
   private static class ProjectRowMapper implements RowMapper<Project> {

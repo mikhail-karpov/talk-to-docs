@@ -3,6 +3,8 @@ package com.mikhailkarpov.docs.projects;
 import com.mikhailkarpov.docs.TestcontainersConfig;
 import com.mikhailkarpov.docs.projects.command.CreateProjectCommand;
 import com.mikhailkarpov.docs.projects.command.EditProjectCommand;
+import com.mikhailkarpov.docs.projects.event.ProjectCreatedEvent;
+import com.mikhailkarpov.docs.projects.event.ProjectDeletedEvent;
 import com.mikhailkarpov.docs.projects.jdbc.JdbcProjectRepository;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
@@ -11,11 +13,15 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jdbc.test.autoconfigure.DataJdbcTest;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 
 @DataJdbcTest
 @Import(TestcontainersConfig.class)
+@RecordApplicationEvents
 class ProjectServiceTest {
 
   // Seeded by db/seed/V3__insert_test_users.sql; required by the project.user_id FK.
@@ -25,13 +31,20 @@ class ProjectServiceTest {
   @Autowired
   private JdbcClient jdbcClient;
 
+  @Autowired
+  private ApplicationEventPublisher eventPublisher;
+
+  @Autowired
+  private ApplicationEvents events;
+
   private JdbcProjectRepository projectRepository;
   private ProjectService projectService;
 
   @BeforeEach
   void setUp() {
+    events.clear();
     projectRepository = new JdbcProjectRepository(jdbcClient);
-    projectService = new ProjectService(projectRepository);
+    projectService = new ProjectService(projectRepository, eventPublisher);
   }
 
   @Nested
@@ -51,6 +64,10 @@ class ProjectServiceTest {
       Assertions.assertThat(projectRepository.findProject(project.projectId()))
           .isPresent().get()
           .returns("My Project", Project::title);
+
+      Assertions.assertThat(events.stream(ProjectCreatedEvent.class))
+          .singleElement()
+          .returns(project, ProjectCreatedEvent::project);
     }
 
     @Test
@@ -179,6 +196,13 @@ class ProjectServiceTest {
 
       Assertions.assertThat(projectRepository.findProject(created.projectId()))
           .isEmpty();
+
+      Assertions.assertThat(events.stream(ProjectDeletedEvent.class))
+          .singleElement()
+          .extracting(ProjectDeletedEvent::project)
+          .returns(created.id(), Project::id)
+          .returns(USER_ID, Project::userId)
+          .returns("To Delete", Project::title);
     }
 
     @Test
@@ -187,6 +211,8 @@ class ProjectServiceTest {
 
       Assertions.assertThatThrownBy(() -> projectService.deleteProject(missingId))
           .isInstanceOf(ProjectNotFoundException.class);
+
+      Assertions.assertThat(events.stream(ProjectDeletedEvent.class)).isEmpty();
     }
 
     @Test
@@ -200,6 +226,8 @@ class ProjectServiceTest {
 
       Assertions.assertThat(projectRepository.findProject(created.projectId()))
           .isPresent();
+
+      Assertions.assertThat(events.stream(ProjectDeletedEvent.class)).isEmpty();
     }
   }
 }

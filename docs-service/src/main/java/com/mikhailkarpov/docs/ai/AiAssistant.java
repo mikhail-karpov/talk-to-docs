@@ -38,13 +38,13 @@ public class AiAssistant {
   }
 
   @Async("applicationTaskExecutor")
-  CompletableFuture<String> reply(String conversationId, String userId, String content) {
+  CompletableFuture<String> reply(String conversationId, String projectId, String content) {
     return CompletableFuture.completedFuture(
         chatClient
             .prompt()
             .advisors(a -> a
                 .param(ChatMemory.CONVERSATION_ID, conversationId)
-                .param(QuestionAnswerAdvisor.FILTER_EXPRESSION, "userId == '" + userId + "'"))
+                .param(QuestionAnswerAdvisor.FILTER_EXPRESSION, "projectId == '" + projectId + "'"))
             .user(content)
             .call()
             .content());

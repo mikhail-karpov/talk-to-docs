@@ -23,98 +23,121 @@ import org.springframework.core.io.ClassPathResource;
 
 class DocumentIndexerTest {
 
-  private SimpleVectorStore vectorStore;
-  private DocumentIndexer documentIndexer;
+    private SimpleVectorStore vectorStore;
+    private DocumentIndexer documentIndexer;
 
-  @BeforeEach
-  void setUp() {
-    var embeddingModel = new ConstantEmbeddingModel();
-    this.vectorStore = SimpleVectorStore.builder(embeddingModel).build();
+    @BeforeEach
+    void setUp() {
+        var embeddingModel = new ConstantEmbeddingModel();
+        this.vectorStore = SimpleVectorStore.builder(embeddingModel).build();
 
-    var readerRegistry = new DocumentSourceReaderRegistry(List.of(
-        new MarkdownSourceReader(),
-        new TextSourceReader(),
-        new PdfSourceReader()));
-    var textSplitter = TokenTextSplitter.builder().build();
-    this.documentIndexer = new DocumentIndexer(vectorStore, readerRegistry, textSplitter);
-  }
-
-  @Test
-  void add_storesChunksEnrichedWithDocumentMetadata() {
-    var document = DocumentMetadata.builder()
-        .id("doc-1")
-        .userId("user-1")
-        .name("test.txt")
-        .contentType("text/plain")
-        .build();
-    var resource = new ClassPathResource("documents/test.txt");
-
-    documentIndexer.add(document, resource).join();
-
-    var stored = search();
-    assertThat(stored).isNotEmpty();
-    assertThat(stored).allSatisfy(d -> assertThat(d.getMetadata())
-        .containsEntry("documentId", "doc-1")
-        .containsEntry("userId", "user-1"));
-  }
-
-  @Test
-  void add_usesReaderForDocumentContentType() {
-    var document = DocumentMetadata.builder()
-        .id("doc-md")
-        .userId("user-1")
-        .name("test.md")
-        .contentType("text/markdown")
-        .build();
-    var resource = new ClassPathResource("documents/test.md");
-
-    documentIndexer.add(document, resource).join();
-
-    assertThat(search())
-        .anyMatch(d -> d.getText() != null && d.getText().contains("Some body text"));
-  }
-
-  @Test
-  void delete_removesOnlyDocumentsOfGivenDocument() {
-    var first = DocumentMetadata.builder()
-        .id("doc-1").userId("user-1").name("test.txt").contentType("text/plain").build();
-    var second = DocumentMetadata.builder()
-        .id("doc-2").userId("user-1").name("test.md").contentType("text/markdown").build();
-
-    documentIndexer.add(first, new ClassPathResource("documents/test.txt")).join();
-    documentIndexer.add(second, new ClassPathResource("documents/test.md")).join();
-
-    documentIndexer.delete(first).join();
-
-    var remaining = search();
-    assertThat(remaining).isNotEmpty();
-    assertThat(remaining).allSatisfy(d ->
-        assertThat(d.getMetadata()).containsEntry("documentId", "doc-2"));
-  }
-
-  private List<Document> search() {
-    return vectorStore.similaritySearch(SearchRequest.builder()
-        .query("anything")
-        .topK(100)
-        .similarityThreshold(0.0)
-        .build());
-  }
-
-  private static class ConstantEmbeddingModel implements EmbeddingModel {
-
-    private static final float[] VECTOR = {0.1f, 0.2f, 0.3f};
-
-    @Override
-    public float @NonNull [] embed(@NonNull Document document) {
-      return VECTOR;
+        var readerRegistry = new DocumentSourceReaderRegistry(List.of(
+                new MarkdownSourceReader(),
+                new TextSourceReader(),
+                new PdfSourceReader()));
+        var textSplitter = TokenTextSplitter.builder().build();
+        this.documentIndexer = new DocumentIndexer(vectorStore, readerRegistry, textSplitter);
     }
 
-    @Override
-    public @NonNull EmbeddingResponse call(EmbeddingRequest request) {
-      var embeddings = request.getInstructions().stream()
-          .map(_ -> new Embedding(VECTOR, 0))
-          .toList();
-      return new EmbeddingResponse(embeddings);
+    @Test
+    void add_storesChunksEnrichedWithDocumentMetadata() {
+        var document = DocumentMetadata.builder()
+                .id("doc-1")
+                .userId("user-1")
+                .projectId("project-1")
+                .name("test.txt")
+                .contentType("text/plain")
+                .build();
+        var resource = new ClassPathResource("documents/test.txt");
+
+        documentIndexer.add(document, resource).join();
+
+        var stored = search();
+        assertThat(stored).isNotEmpty();
+        assertThat(stored).allSatisfy(d -> assertThat(d.getMetadata())
+                .containsEntry("documentId", "doc-1")
+                .containsEntry("projectId", "project-1"));
     }
-  }
+
+    @Test
+    void add_usesReaderForDocumentContentType() {
+        var document = DocumentMetadata.builder()
+                .id("doc-md")
+                .userId("user-1")
+                .projectId("project-1")
+                .name("test.md")
+                .contentType("text/markdown")
+                .build();
+        var resource = new ClassPathResource("documents/test.md");
+
+        documentIndexer.add(document, resource).join();
+
+        assertThat(search())
+                .anyMatch(d -> d.getText() != null && d.getText().contains("Some body text"));
+    }
+
+    @Test
+    void delete_removesOnlyDocumentsOfGivenDocument() {
+        var first = DocumentMetadata.builder()
+                .id("doc-1").userId("user-1").projectId("project-1").name("test.txt").contentType("text/plain").build();
+        var second = DocumentMetadata.builder()
+                .id("doc-2").userId("user-1").projectId("project-1").name("test.md").contentType("text/markdown")
+                .build();
+
+        documentIndexer.add(first, new ClassPathResource("documents/test.txt")).join();
+        documentIndexer.add(second, new ClassPathResource("documents/test.md")).join();
+
+        documentIndexer.delete(first).join();
+
+        var remaining = search();
+        assertThat(remaining).isNotEmpty();
+        assertThat(remaining).allSatisfy(d -> assertThat(d.getMetadata()).containsEntry("documentId", "doc-2"));
+    }
+
+    @Test
+    void deleteByProjectId_removesOnlyDocumentsOfGivenProject() {
+        var first = DocumentMetadata.builder()
+                .id("doc-1").userId("user-1").projectId("project-1").name("test.txt").contentType("text/plain").build();
+        var second = DocumentMetadata.builder()
+                .id("doc-2").userId("user-1").projectId("project-1").name("test.md").contentType("text/markdown")
+                .build();
+        var other = DocumentMetadata.builder()
+                .id("doc-3").userId("user-1").projectId("project-2").name("test.txt").contentType("text/plain").build();
+
+        documentIndexer.add(first, new ClassPathResource("documents/test.txt")).join();
+        documentIndexer.add(second, new ClassPathResource("documents/test.md")).join();
+        documentIndexer.add(other, new ClassPathResource("documents/test.txt")).join();
+
+        documentIndexer.deleteByProjectId("project-1").join();
+
+        var remaining = search();
+        assertThat(remaining).isNotEmpty();
+        assertThat(remaining).allSatisfy(d -> assertThat(d.getMetadata()).containsEntry("projectId", "project-2"));
+    }
+
+    private List<Document> search() {
+        return vectorStore.similaritySearch(SearchRequest.builder()
+                .query("anything")
+                .topK(100)
+                .similarityThreshold(0.0)
+                .build());
+    }
+
+    private static class ConstantEmbeddingModel implements EmbeddingModel {
+
+        private static final float[] VECTOR = { 0.1f, 0.2f, 0.3f };
+
+        @Override
+        public float @NonNull [] embed(@NonNull Document document) {
+            return VECTOR;
+        }
+
+        @Override
+        public @NonNull EmbeddingResponse call(EmbeddingRequest request) {
+            var embeddings = request.getInstructions().stream()
+                    .map(_ -> new Embedding(VECTOR, 0))
+                    .toList();
+            return new EmbeddingResponse(embeddings);
+        }
+    }
 }

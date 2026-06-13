@@ -27,14 +27,20 @@ public class DocumentIndexer {
   }
 
   @Async("applicationTaskExecutor")
-  public CompletableFuture<Void> add(DocumentMetadata document, Resource resource) {
+  CompletableFuture<Void> add(DocumentMetadata document, Resource resource) {
     return CompletableFuture.completedFuture(readDocuments(document, resource))
         .thenAccept(vectorStore::add);
   }
 
   @Async("applicationTaskExecutor")
-  public CompletableFuture<Void> delete(DocumentMetadata document) {
+  CompletableFuture<Void> delete(DocumentMetadata document) {
     vectorStore.delete("documentId == '" + document.getId() + "'");
+    return CompletableFuture.completedFuture(null);
+  }
+
+  @Async("applicationTaskExecutor")
+  CompletableFuture<Void> deleteByProjectId(String projectId) {
+    vectorStore.delete("projectId == '" + projectId + "'");
     return CompletableFuture.completedFuture(null);
   }
 
@@ -43,7 +49,7 @@ public class DocumentIndexer {
     var docs = reader.read(resource);
     docs.forEach(d -> {
       d.getMetadata().put("documentId", document.getId());
-      d.getMetadata().put("userId", document.getUserId());
+      d.getMetadata().put("projectId", document.getProjectId());
     });
     return textSplitter.apply(docs);
   }

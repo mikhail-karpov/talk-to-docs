@@ -8,15 +8,17 @@ public class DocumentMetadata {
 
   private final String id;
   private final String userId;
+  private final String projectId;
   private final String name;
   private final String contentType;
   private final long sizeBytes;
   private DocumentStatus status;
   private Instant updatedAt;
 
-  private DocumentMetadata(String id, String userId, String name, String contentType, long sizeBytes, DocumentStatus status) {
+  private DocumentMetadata(String id, String userId, String projectId, String name, String contentType, long sizeBytes, DocumentStatus status) {
     this.id = id;
     this.userId = userId;
+    this.projectId = projectId;
     this.name = name;
     this.contentType = contentType;
     this.sizeBytes = sizeBytes;
@@ -56,6 +58,10 @@ public class DocumentMetadata {
     return userId;
   }
 
+  public String getProjectId() {
+    return projectId;
+  }
+
   public Instant getUpdatedAt() {
     return updatedAt;
   }
@@ -77,6 +83,7 @@ public class DocumentMetadata {
     return "DocumentMetadata{" +
         "id='" + id + '\'' +
         ", userId='" + userId + '\'' +
+        ", projectId='" + projectId + '\'' +
         ", name='" + name + '\'' +
         ", contentType='" + contentType + '\'' +
         ", sizeBytes=" + sizeBytes +
@@ -89,6 +96,7 @@ public class DocumentMetadata {
 
     private String id = UUID.randomUUID().toString();
     private String userId;
+    private String projectId;
     private String name;
     private String contentType;
     private long sizeBytes;
@@ -103,6 +111,11 @@ public class DocumentMetadata {
 
     public DocumentMetadataBuilder userId(String userId) {
       this.userId = userId;
+      return this;
+    }
+
+    public DocumentMetadataBuilder projectId(String projectId) {
+      this.projectId = projectId;
       return this;
     }
 
@@ -127,7 +140,7 @@ public class DocumentMetadata {
     }
 
     public DocumentMetadata build() {
-      return new DocumentMetadata(id, userId, name, contentType, sizeBytes, status);
+      return new DocumentMetadata(id, userId, projectId, name, contentType, sizeBytes, status);
     }
   }
 }

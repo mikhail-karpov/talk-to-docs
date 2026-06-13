@@ -5,6 +5,7 @@ import java.time.Instant;
 
 public record DocumentResponse(
     String id,
+    String projectId,
     String name,
     long sizeBytes,
     DocumentStatus status,
@@ -13,6 +14,7 @@ public record DocumentResponse(
   public static DocumentResponse from(DocumentMetadata document) {
     return new DocumentResponse(
         document.getId(),
+        document.getProjectId(),
         document.getName(),
         document.getSizeBytes(),
         document.getStatus(),

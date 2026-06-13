@@ -1,12 +1,19 @@
 package com.mikhailkarpov.docs.documents;
 
 import com.mikhailkarpov.docs.TestcontainersConfig;
+import com.mikhailkarpov.docs.documents.command.DocumentQuery;
+import com.mikhailkarpov.docs.documents.command.UploadDocumentCommand;
 import com.mikhailkarpov.docs.documents.event.DocumentCreatedEvent;
 import com.mikhailkarpov.docs.documents.event.DocumentDeletedEvent;
 import com.mikhailkarpov.docs.documents.event.DocumentUpdatedEvent;
 import com.mikhailkarpov.docs.documents.jdbc.DocumentJdbcRepository;
 import com.mikhailkarpov.docs.documents.web.DocumentStatus;
+import com.mikhailkarpov.docs.projects.Project;
+import com.mikhailkarpov.docs.projects.ProjectId;
+import com.mikhailkarpov.docs.projects.ProjectNotFoundException;
+import com.mikhailkarpov.docs.projects.jdbc.JdbcProjectRepository;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +37,7 @@ class DocumentServiceTest {
 
   // Seeded by db/seed/V3__insert_test_users.sql; required by the documents.user_id FK.
   private static final String USER_ID = "2686f7a3-bd4a-4938-93a7-fe8e9360eb28";
+  private static final String PROJECT_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
   private static final String OTHER_USER_ID = UUID.randomUUID().toString();
 
   @Autowired
@@ -48,12 +56,15 @@ class DocumentServiceTest {
   void setUp() {
     this.events.clear();
     this.documentRepository = new DocumentJdbcRepository(jdbcClient);
-    this.documentService = new DocumentService(documentRepository, eventPublisher);
+    var projectRepository = new JdbcProjectRepository(jdbcClient);
+    this.documentService = new DocumentService(documentRepository, projectRepository, eventPublisher);
+    projectRepository.addProject(new Project(PROJECT_ID, USER_ID, "Test Project", null, Instant.now()));
   }
 
   private DocumentMetadata persistDocument(String userId, String name, DocumentStatus status) {
     var document = DocumentMetadata.builder()
         .userId(userId)
+        .projectId(PROJECT_ID)
         .name(name)
         .contentType("text/markdown")
         .sizeBytes(1024L)
@@ -75,10 +86,12 @@ class DocumentServiceTest {
         }
       };
 
-      var uploaded = documentService.uploadDocument(USER_ID, resource, "text/markdown");
+      var uploaded = documentService.uploadDocument(
+          new UploadDocumentCommand(new ProjectId(PROJECT_ID, USER_ID), resource, "text/markdown"));
 
       Assertions.assertThat(uploaded)
           .returns(USER_ID, DocumentMetadata::getUserId)
+          .returns(PROJECT_ID, DocumentMetadata::getProjectId)
           .returns("test.md", DocumentMetadata::getName)
           .returns("text/markdown", DocumentMetadata::getContentType)
           .returns((long) "# Hello".getBytes().length, DocumentMetadata::getSizeBytes)
@@ -94,11 +107,30 @@ class DocumentServiceTest {
     }
 
     @Test
+    void throwsWhenProjectDoesNotExist() {
+      var resource = new ByteArrayResource("# Hello".getBytes()) {
+        @Override
+        public String getFilename() {
+          return "test.md";
+        }
+      };
+      var missingProjectId = UUID.randomUUID().toString();
+
+      Assertions.assertThatThrownBy(() -> documentService.uploadDocument(
+              new UploadDocumentCommand(new ProjectId(missingProjectId, USER_ID), resource, "text/markdown")))
+          .isInstanceOf(ProjectNotFoundException.class);
+
+      Assertions.assertThat(events.stream(DocumentCreatedEvent.class))
+          .isEmpty();
+    }
+
+    @Test
     void wrapsIOExceptionInRuntimeException() throws IOException {
       var resource = Mockito.mock(Resource.class);
       Mockito.when(resource.getInputStream()).thenThrow(new IOException("boom"));
 
-      Assertions.assertThatThrownBy(() -> documentService.uploadDocument(USER_ID, resource, "text/markdown"))
+      Assertions.assertThatThrownBy(() -> documentService.uploadDocument(
+              new UploadDocumentCommand(new ProjectId(PROJECT_ID, USER_ID), resource, "text/markdown")))
           .isInstanceOf(RuntimeException.class)
           .hasCauseInstanceOf(IOException.class);
 
@@ -145,15 +177,36 @@ class DocumentServiceTest {
       var first = persistDocument(USER_ID, "first.md", DocumentStatus.UPLOADED);
       var second = persistDocument(USER_ID, "second.md", DocumentStatus.PROCESSED);
 
-      var documents = documentService.findDocuments(USER_ID);
+      var documents = documentService.findDocuments(new DocumentQuery(USER_ID, null));
 
       Assertions.assertThat(documents)
           .containsExactlyInAnyOrder(first, second);
     }
 
     @Test
+    void returnsDocumentsFilteredByProject() {
+      var inProject = persistDocument(USER_ID, "in-project.md", DocumentStatus.UPLOADED);
+
+      var documents = documentService.findDocuments(new DocumentQuery(USER_ID, PROJECT_ID));
+
+      Assertions.assertThat(documents)
+          .containsExactly(inProject);
+    }
+
+    @Test
+    void returnsEmptyListWhenProjectHasNoDocuments() {
+      persistDocument(USER_ID, "in-project.md", DocumentStatus.UPLOADED);
+      var otherProjectId = UUID.randomUUID().toString();
+
+      var documents = documentService.findDocuments(new DocumentQuery(USER_ID, otherProjectId));
+
+      Assertions.assertThat(documents)
+          .isEmpty();
+    }
+
+    @Test
     void returnsEmptyListWhenUserHasNoDocuments() {
-      var documents = documentService.findDocuments(OTHER_USER_ID);
+      var documents = documentService.findDocuments(new DocumentQuery(OTHER_USER_ID, null));
 
       Assertions.assertThat(documents)
           .isEmpty();
