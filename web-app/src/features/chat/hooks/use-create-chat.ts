@@ -8,8 +8,9 @@ export function useCreateChat() {
   const navigate = useNavigate()
 
   const mutation = useMutation({
-    mutationFn: (body: { content: string }) => createChat(body),
+    mutationFn: (body: { content: string; projectId: string }) => createChat(body),
     onSuccess: ({ conversationId }) => {
+      // Prefix-matches both the global list and every project-scoped list.
       queryClient.invalidateQueries({ queryKey: chatKeys.conversations() })
       navigate(`/chats/${conversationId}`)
     },

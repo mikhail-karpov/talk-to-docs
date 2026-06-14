@@ -21,8 +21,12 @@ function rejectionReason(file: File): string | null {
   return null
 }
 
-export function UploadDocumentsForm() {
-  const { upload, isUploading } = useUploadDocuments()
+interface UploadDocumentsFormProps {
+  projectId: string
+}
+
+export function UploadDocumentsForm({ projectId }: UploadDocumentsFormProps) {
+  const { upload, isUploading } = useUploadDocuments(projectId)
   const inputRef = useRef<HTMLInputElement>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
@@ -63,7 +67,6 @@ export function UploadDocumentsForm() {
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm font-medium">Files</p>
       <div
         role="button"
         tabIndex={isUploading ? -1 : 0}

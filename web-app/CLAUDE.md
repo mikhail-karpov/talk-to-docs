@@ -20,7 +20,6 @@ pnpm preview    # Preview production build
 - **axios**
 - stomp with sockjs-client for real-time updates
 - **TanStack Query** for server-side state management
-- **Zustand** for client-side state management
 
 ## PLANNING MODE - ALWAYS FOLLOW
 

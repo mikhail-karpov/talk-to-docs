@@ -1,14 +1,17 @@
 import { api } from '@/lib/api-client'
 import type { Document } from '@/features/documents/types/document'
 
-export async function getDocuments(): Promise<Document[]> {
-  const { data } = await api.get<{ items: Document[] }>('/api/v1/documents')
+export async function getDocuments(projectId: string): Promise<Document[]> {
+  const { data } = await api.get<{ items: Document[] }>('/api/v1/documents', {
+    params: { projectId },
+  })
   return data.items
 }
 
-async function uploadDocument(file: File): Promise<Document> {
+async function uploadDocument(file: File, projectId: string): Promise<Document> {
   const form = new FormData()
   form.append('document', file)
+  form.append('projectId', projectId)
   const { data } = await api.post<Document>('/api/v1/documents', form, {
     headers: { 'Content-Type': undefined },
   })
@@ -20,8 +23,8 @@ export interface UploadResult {
   failed: string[]
 }
 
-export async function uploadDocuments(files: File[]): Promise<UploadResult> {
-  const results = await Promise.allSettled(files.map(uploadDocument))
+export async function uploadDocuments(files: File[], projectId: string): Promise<UploadResult> {
+  const results = await Promise.allSettled(files.map((file) => uploadDocument(file, projectId)))
   const uploaded: Document[] = []
   const failed: string[] = []
   results.forEach((result, i) => {

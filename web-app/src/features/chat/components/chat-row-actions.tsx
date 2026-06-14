@@ -35,7 +35,7 @@ export function ChatRowActions({ chat, onStartEditing }: ChatRowActionsProps) {
             onStartEditing()
           }}
         >
-          <Pencil data-icon="inline-start" />
+          <Pencil />
         </Button>
         <AlertDialog>
           <AlertDialogTrigger asChild>
@@ -46,9 +46,9 @@ export function ChatRowActions({ chat, onStartEditing }: ChatRowActionsProps) {
               disabled={deleteChat.isPending}
             >
               {deleteChat.isPending ? (
-                <Loader2 data-icon="inline-start" className="animate-spin" />
+                <Loader2 className="animate-spin" />
               ) : (
-                <Trash2 data-icon="inline-start" />
+                <Trash2 />
               )}
             </Button>
           </AlertDialogTrigger>
@@ -63,7 +63,7 @@ export function ChatRowActions({ chat, onStartEditing }: ChatRowActionsProps) {
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction
                 variant="destructive"
-                onClick={() => deleteChat.mutate(chat.id)}
+                onClick={() => deleteChat.mutate(chat)}
                 disabled={deleteChat.isPending}
               >
                 Delete

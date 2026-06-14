@@ -1,5 +1,5 @@
-import { BookOpen, FileText, MessageSquare } from 'lucide-react'
-import { NavLink, Outlet, useLocation } from 'react-router'
+import { BookOpen, FolderOpen, MessageSquare } from 'lucide-react'
+import { Outlet } from 'react-router'
 import {
   Sidebar,
   SidebarContent,
@@ -9,19 +9,16 @@ import {
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
   SidebarProvider,
   SidebarRail,
+  SidebarMenuItem,
+  SidebarMenuButton,
   SidebarTrigger,
 } from '@/components/ui/sidebar'
 import { UserCard } from '@/features/auth/components/user-card'
+import { NavItem } from '@/components/layout/nav-item'
 
 export default function AppLayout() {
-  const location = useLocation()
-  const isChatsActive = location.pathname.startsWith('/chats')
-  const isDocumentsActive = location.pathname.startsWith('/documents')
-
   return (
     <SidebarProvider>
       <Sidebar collapsible="icon">
@@ -47,22 +44,8 @@ export default function AppLayout() {
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isChatsActive} tooltip="Chats">
-                    <NavLink to="/chats">
-                      <MessageSquare />
-                      <span>Chats</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isDocumentsActive} tooltip="Documents">
-                    <NavLink to="/documents">
-                      <FileText />
-                      <span>Documents</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                <NavItem to="/projects" icon={FolderOpen} label="Projects" />
+                <NavItem to="/chats" icon={MessageSquare} label="Recent Chats" />
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

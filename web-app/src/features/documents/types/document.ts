@@ -2,6 +2,7 @@ export type DocumentStatus = 'PENDING' | 'UPLOADED' | 'PROCESSED' | 'ERROR' | 'D
 
 export interface Document {
   id: string
+  projectId: string
   name: string
   sizeBytes: number
   status: DocumentStatus

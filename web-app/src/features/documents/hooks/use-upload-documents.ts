@@ -1,24 +1,23 @@
-import { useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { uploadDocuments, type UploadResult } from '@/features/documents/api/documents-api'
-import { useDocumentsStore } from '@/features/documents/stores/documents-store'
+import { documentKeys } from '@/features/documents/api/query-keys'
 
-export function useUploadDocuments() {
-  const upsert = useDocumentsStore((s) => s.upsert)
-  const [isUploading, setIsUploading] = useState(false)
+export function useUploadDocuments(projectId: string) {
+  const queryClient = useQueryClient()
 
-  async function upload(files: File[]): Promise<UploadResult> {
-    setIsUploading(true)
-    try {
-      const result = await uploadDocuments(files)
-      result.uploaded.forEach(upsert)
-      return result
-    } catch {
-      // uploadDocuments settles per file and shouldn't reject; guard against an unexpected throw.
-      return { uploaded: [], failed: files.map((f) => f.name) }
-    } finally {
-      setIsUploading(false)
-    }
+  const mutation = useMutation({
+    mutationFn: (files: File[]) => uploadDocuments(files, projectId),
+    // uploadDocuments settles per file and never rejects, so onSuccess fires on partial success
+    // too; refetching the project's list picks up whatever uploaded.
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: documentKeys.lists(projectId) })
+    },
+  })
+
+  // Resolves with the partial-success UploadResult so the form can surface failed file names.
+  function upload(files: File[]): Promise<UploadResult> {
+    return mutation.mutateAsync(files)
   }
 
-  return { upload, isUploading }
+  return { upload, isUploading: mutation.isPending }
 }

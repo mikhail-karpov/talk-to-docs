@@ -19,14 +19,12 @@ src
 |   |
 |   +-- auth                # authentication
 |   +-- chat                # chat
-|   +-- documents           # documents management
 |   +-- websocket           # websocket management
+|   +-- projects           # projects management
 |
 +-- hooks             # shared hooks used across the entire application
 |
 +-- lib               # reusable libraries preconfigured for the application
-|
-+-- stores            # global state stores
 |
 +-- testing           # test utilities and mocks
 |

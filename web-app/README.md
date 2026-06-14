@@ -7,22 +7,20 @@ React frontend for the Talk-To-Docs RAG application — upload documents and cha
 - **React 19** + **TypeScript** + **Vite**
 - **React Router**
 - **Tailwind CSS v4** + **shadcn/ui**
-- **TanStack Query** (server state), **Zustand** (client state)
+- **TanStack Query** (server state)
 - **axios**, **STOMP / SockJS** (WebSocket)
 
 ## Structure
 
 ```
 src/
-├── app/         # Routes, root component, provider, router config
-├── assets/      # Static files
-├── components/  # Shared components
-├── features/    # Feature modules (auth, chat, documents, websocket)
+├── app/         # Root component (index.tsx), router config, route components, auth guard
+├── components/  # Shared components (layout/, ui/)
+├── features/    # Feature modules (auth, chat, documents, projects, websocket)
 ├── hooks/       # Shared hooks
-├── lib/         # Preconfigured libraries
-├── stores/      # Global Zustand stores
-├── types/       # Shared TypeScript types
-└── utils/       # Shared utility functions
+├── lib/         # Preconfigured libraries (axios, TanStack Query, utils)
+├── index.css    # Global styles
+└── main.tsx     # Application entry point
 ```
 
 ## Commands

@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import { Plus, MessageSquare } from 'lucide-react'
-import { Link, NavLink } from 'react-router'
-import { Button } from '@/components/ui/button'
+import { MessageSquare } from 'lucide-react'
+import { NavLink } from 'react-router'
 import { EmptyState } from '@/components/ui/empty-state'
-import { FullPageLoader } from '@/components/ui/full-page-loader'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useChats } from '@/features/chat/hooks/use-chats'
 import { useRenameChat } from '@/features/chat/hooks/use-rename-chat'
 import { ChatRowActions } from '@/features/chat/components/chat-row-actions'
@@ -85,32 +84,44 @@ function ChatListItem({ chat }: ChatListItemProps) {
   )
 }
 
-export function ChatList() {
-  const { chats, isPending } = useChats()
+interface ChatListProps {
+  projectId?: string
+}
+
+export function ChatListContent({ projectId }: ChatListProps) {
+  const { chats, isPending } = useChats(projectId)
+
+  if (isPending) {
+    return (
+      <ul className="flex flex-col gap-1">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <li key={i} className="flex items-center gap-3 px-4 py-3">
+            <Skeleton className="size-4 shrink-0 rounded" />
+            <Skeleton className="h-4 w-1/2" />
+          </li>
+        ))}
+      </ul>
+    )
+  }
+
+  if (chats.length === 0) {
+    return <EmptyState icon={MessageSquare} label="No chats yet. Start a new one!" />
+  }
 
   return (
-    <div className="flex flex-col gap-6 p-8 max-w-4xl mx-auto w-full">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Chats</h1>
-        <Button asChild>
-          <Link to="/chats/new">
-            <Plus className="size-4" />
-            New Chat
-          </Link>
-        </Button>
-      </div>
+    <ul className="flex flex-col gap-1">
+      {chats.map((chat) => (
+        <ChatListItem key={chat.id} chat={chat} />
+      ))}
+    </ul>
+  )
+}
 
-      {isPending ? (
-        <FullPageLoader />
-      ) : chats.length === 0 ? (
-        <EmptyState icon={MessageSquare} label="No chats yet. Start a new one!" />
-      ) : (
-        <ul className="flex flex-col gap-1">
-          {chats.map((chat) => (
-            <ChatListItem key={chat.id} chat={chat} />
-          ))}
-        </ul>
-      )}
+export function ChatList({ projectId }: ChatListProps) {
+  return (
+    <div className="flex flex-col gap-6">
+      <h2 className="text-2xl font-semibold">Chats</h2>
+      <ChatListContent projectId={projectId} />
     </div>
   )
 }

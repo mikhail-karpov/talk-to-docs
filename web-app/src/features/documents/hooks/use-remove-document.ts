@@ -1,26 +1,20 @@
-import { useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { deleteDocument } from '@/features/documents/api/documents-api'
-import { useDocumentsStore } from '@/features/documents/stores/documents-store'
+import { documentKeys } from '@/features/documents/api/query-keys'
 
 // Scoped to a single document: each DocumentRowActions instance owns its own copy of this hook.
 export function useRemoveDocument() {
-  const remove = useDocumentsStore((s) => s.remove)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const queryClient = useQueryClient()
 
-  async function removeDocument(id: string): Promise<void> {
-    setIsDeleting(true)
-    setDeleteError(null)
-    try {
-      // Deletes aren't pushed over WebSocket, so the deleting client removes the row itself.
-      await deleteDocument(id)
-      remove(id)
-    } catch {
-      setDeleteError('Failed to delete document. Please try again.')
-    } finally {
-      setIsDeleting(false)
-    }
-  }
+  const mutation = useMutation({
+    mutationFn: (id: string) => deleteDocument(id),
+    // Prefix-invalidate every project list to drop the row.
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: documentKeys.lists() })
+    },
+  })
 
-  return { removeDocument, isDeleting, deleteError }
+  const deleteError = mutation.error ? 'Failed to delete document. Please try again.' : null
+
+  return { removeDocument: mutation.mutate, isDeleting: mutation.isPending, deleteError }
 }

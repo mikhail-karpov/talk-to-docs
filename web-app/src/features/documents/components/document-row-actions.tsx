@@ -27,9 +27,9 @@ export function DocumentRowActions({ document }: DocumentRowActionsProps) {
         <AlertDialogTrigger asChild>
           <Button variant="ghost" size="icon" aria-label="Delete document" disabled={isDeleting}>
             {isDeleting ? (
-              <Loader2 data-icon="inline-start" className="animate-spin" />
+              <Loader2 className="animate-spin" />
             ) : (
-              <Trash2 data-icon="inline-start" />
+              <Trash2 />
             )}
           </Button>
         </AlertDialogTrigger>
