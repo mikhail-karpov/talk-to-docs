@@ -37,6 +37,7 @@ public class WebSecurityConfig {
   SecurityFilterChain filterChain(HttpSecurity http) {
 
     var permitAllUrls = new String[] {
+        "/api/v1/auth/registration",
         "/api/v1/auth/login",
         "/error"
     };

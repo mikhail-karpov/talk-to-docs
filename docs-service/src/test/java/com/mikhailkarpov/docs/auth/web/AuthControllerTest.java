@@ -1,5 +1,10 @@
 package com.mikhailkarpov.docs.auth.web;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -8,10 +13,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.mikhailkarpov.docs.config.RestControllerTest;
+import com.mikhailkarpov.docs.auth.RegisterUserCommand;
 import com.mikhailkarpov.docs.auth.User;
+import com.mikhailkarpov.docs.auth.UserRegisteredException;
 import com.mikhailkarpov.docs.auth.UserService;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -28,7 +38,78 @@ class AuthControllerTest {
   @MockitoBean
   private UserService userService;
 
-  private final User testUser = new User("test-id", "test@example.com", "{noop}password123", "John", "Doe");
+  private final User testUser = new User(
+      "test-id",
+      "test@example.com",
+      "{noop}password123",
+      "John",
+      "Doe");
+
+
+  @Nested
+  class RegistrationTest {
+
+    private static final String VALID_REQUEST = """
+      {
+        "email": "new@example.com",
+        "password": "password123",
+        "firstName": "Jane",
+        "lastName": "Roe"
+      }
+      """;
+
+    @Test
+    void register_withValidRequest_returns200() throws Exception {
+      mockMvc.perform(post("/api/v1/auth/registration")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(VALID_REQUEST))
+          .andExpect(status().isOk());
+
+      var captor = ArgumentCaptor.forClass(RegisterUserCommand.class);
+      verify(userService).registerUser(captor.capture());
+      assertThat(captor.getValue())
+          .returns("new@example.com", RegisterUserCommand::email)
+          .returns("password123", RegisterUserCommand::password)
+          .returns("Jane", RegisterUserCommand::firstName)
+          .returns("Roe", RegisterUserCommand::lastName);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+      """
+        {"email": "email", "password": "password123", "firstName": "Jane", "lastName": "Roe"}""",
+      """
+        {"password": "password123", "firstName": "Jane", "lastName": "Roe"}""",
+      """
+        {"email": "new@example.com", "password": "abc", "firstName": "Jane", "lastName": "Roe"}""",
+      """
+        {"email": "new@example.com", "firstName": "Jane", "lastName": "Roe"}""",
+      """
+        {"email": "new@example.com", "password": "password123", "firstName": "", "lastName": "Roe"}""",
+      """
+        {"email": "new@example.com", "password": "password123", "firstName": "Jane", "lastName": ""}"""
+    })
+    void register_withInvalidRequest_returns400(String request) throws Exception {
+      mockMvc.perform(post("/api/v1/auth/registration")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(request))
+          .andExpect(status().isBadRequest());
+
+      verifyNoInteractions(userService);
+    }
+
+    @Test
+    void register_withDuplicateEmail_returns409() throws Exception {
+
+      doThrow(new UserRegisteredException())
+          .when(userService).registerUser(any());
+
+      mockMvc.perform(post("/api/v1/auth/registration")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(VALID_REQUEST))
+          .andExpect(status().isConflict());
+    }
+  }
 
 
   @Nested

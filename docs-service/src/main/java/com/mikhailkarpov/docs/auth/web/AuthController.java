@@ -34,6 +34,12 @@ class AuthController {
     this.securityContextRepository = securityContextRepository;
   }
 
+  @PostMapping("/registration")
+  void registerUser(@Valid @RequestBody RegistrationRequest request) {
+
+    userService.registerUser(request.toCommand());
+  }
+
   @PostMapping("/login")
   AuthResponse login(
       @Valid @RequestBody AuthRequest authRequest,
