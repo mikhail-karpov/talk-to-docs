@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { Link } from 'react-router'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -79,6 +80,12 @@ export function SignInForm() {
             </Button>
           </form>
         </Form>
+        <p className="text-muted-foreground mt-4 text-center text-sm">
+          Don't have an account?{' '}
+          <Link to="/sign-up" className="text-primary hover:underline">
+            Sign up
+          </Link>
+        </p>
       </CardContent>
     </Card>
   )

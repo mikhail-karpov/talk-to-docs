@@ -2,6 +2,7 @@ import { createBrowserRouter, redirect } from 'react-router'
 import AppLayout from '@/components/layout/app-layout'
 import { PrivateRoute } from './private-route'
 import SignInRoute from './routes/sign-in'
+import SignUpRoute from './routes/sign-up'
 import ChatsRoute from './routes/chats'
 import ChatRoute from './routes/chat'
 import ProjectsRoute from './routes/projects'
@@ -38,6 +39,10 @@ export function createRouter() {
           ],
         },
       ],
+    },
+    {
+      path: '/sign-up',
+      element: <SignUpRoute />,
     },
     {
       path: '/sign-in',

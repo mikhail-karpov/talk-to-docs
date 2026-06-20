@@ -1,6 +1,6 @@
 # Talk To Docs
 
-A RAG (Retrieval-Augmented Generation) application that lets you upload documents and chat with them
+Upload documents and chat with them
 using AI.
 
 ## Features
@@ -45,12 +45,7 @@ pnpm install
 pnpm dev
 ```
 
-Open `http://localhost:5173` and sign in with:
-
-```
-test@example.com
-password
-```
+Open browser at `http://localhost:5173`
 
 ## License
 
