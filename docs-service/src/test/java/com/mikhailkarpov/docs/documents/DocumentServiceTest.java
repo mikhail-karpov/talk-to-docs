@@ -1,6 +1,6 @@
 package com.mikhailkarpov.docs.documents;
 
-import com.mikhailkarpov.docs.TestcontainersConfig;
+import com.mikhailkarpov.docs.config.IntegrationTest;
 import com.mikhailkarpov.docs.documents.command.DocumentQuery;
 import com.mikhailkarpov.docs.documents.command.UploadDocumentCommand;
 import com.mikhailkarpov.docs.documents.event.DocumentCreatedEvent;
@@ -21,17 +21,14 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jdbc.test.autoconfigure.DataJdbcTest;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 
-@DataJdbcTest
-@Import(TestcontainersConfig.class)
+@IntegrationTest
 @RecordApplicationEvents
 class DocumentServiceTest {
 

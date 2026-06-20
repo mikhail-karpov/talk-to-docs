@@ -1,6 +1,6 @@
 package com.mikhailkarpov.docs.projects;
 
-import com.mikhailkarpov.docs.TestcontainersConfig;
+import com.mikhailkarpov.docs.config.IntegrationTest;
 import com.mikhailkarpov.docs.projects.command.CreateProjectCommand;
 import com.mikhailkarpov.docs.projects.command.EditProjectCommand;
 import com.mikhailkarpov.docs.projects.event.ProjectCreatedEvent;
@@ -12,15 +12,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jdbc.test.autoconfigure.DataJdbcTest;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 
-@DataJdbcTest
-@Import(TestcontainersConfig.class)
+@IntegrationTest
 @RecordApplicationEvents
 class ProjectServiceTest {
 

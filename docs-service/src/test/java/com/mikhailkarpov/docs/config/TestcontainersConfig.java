@@ -1,4 +1,4 @@
-package com.mikhailkarpov.docs;
+package com.mikhailkarpov.docs.config;
 
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;

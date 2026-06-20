@@ -1,6 +1,5 @@
 package com.mikhailkarpov.docs.chat;
 
-import com.mikhailkarpov.docs.TestcontainersConfig;
 import com.mikhailkarpov.docs.chat.command.ConversationQuery;
 import com.mikhailkarpov.docs.chat.command.CreateConversationCommand;
 import com.mikhailkarpov.docs.chat.command.DeleteConversationCommand;
@@ -9,6 +8,7 @@ import com.mikhailkarpov.docs.chat.command.SendMessageCommand;
 import com.mikhailkarpov.docs.chat.event.ConversationCreatedEvent;
 import com.mikhailkarpov.docs.chat.event.MessageCreatedEvent;
 import com.mikhailkarpov.docs.chat.jdbc.ChatJdbcRepository;
+import com.mikhailkarpov.docs.config.IntegrationTest;
 import com.mikhailkarpov.docs.projects.Project;
 import com.mikhailkarpov.docs.projects.ProjectId;
 import com.mikhailkarpov.docs.projects.jdbc.JdbcProjectRepository;
@@ -19,15 +19,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jdbc.test.autoconfigure.DataJdbcTest;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 
-@DataJdbcTest
-@Import(TestcontainersConfig.class)
+@IntegrationTest
 @RecordApplicationEvents
 class ChatServiceTest {
 

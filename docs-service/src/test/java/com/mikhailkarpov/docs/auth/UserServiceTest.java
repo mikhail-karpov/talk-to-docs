@@ -1,22 +1,19 @@
 package com.mikhailkarpov.docs.auth;
 
-import com.mikhailkarpov.docs.TestcontainersConfig;
 import com.mikhailkarpov.docs.auth.jdbc.UserJdbcRepository;
+import com.mikhailkarpov.docs.config.IntegrationTest;
 import java.util.Objects;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jdbc.test.autoconfigure.DataJdbcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-@DataJdbcTest
-@Import(TestcontainersConfig.class)
+@IntegrationTest
 class UserServiceTest {
 
   @Autowired
