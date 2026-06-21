@@ -14,31 +14,29 @@ logging:
     com.mikhailkarpov: debug
 
 spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/${POSTGRES_DB:talk_to_docs}
-    username: ${POSTGRES_USER:docs_service}
-    password: ${POSTGRES_PASSWORD:ch4ngeMe_local}
+  application:
+    name: docs-service
+  profiles:
+    default: ollama
   ai:
+    model:
+      audio:
+        speech: none
+        transcription: none
+      image: none
+      moderation: none
     chat:
       memory:
         repository:
           jdbc:
             initialize-schema: always
-    ollama:
-      chat:
-        model: qwen2.5
-      embedding:
-        model: nomic-embed-text
-      init:
-        pull-model-strategy: when_missing
     vectorstore:
       pgvector:
-        index-type: HNSW
-        distance-type: COSINE_DISTANCE
-        dimensions: 768
         initialize-schema: true
-  application:
-    name: docs-service
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:talk_to_docs}
+    username: ${POSTGRES_USER:docs_service}
+    password: ${POSTGRES_PASSWORD:ch4ngeMe_local}
   main:
     banner-mode: off
   task:
