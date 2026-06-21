@@ -26,20 +26,21 @@ export function UserCard() {
 
   return (
     <div className="flex items-center justify-between gap-4">
-      <div className="flex items-center gap-3">
-        <Avatar>
+      <div className="flex items-center gap-3 min-w-0">
+        <Avatar className="shrink-0">
           <AvatarFallback>{initials}</AvatarFallback>
         </Avatar>
-        <div>
-          <p className="text-sm font-medium leading-none">
+        <div className="min-w-0">
+          <p className="text-sm font-medium leading-none truncate">
             {user.firstName} {user.lastName}
           </p>
-          <p className="text-xs text-muted-foreground mt-1">{user.email}</p>
+          <p className="text-xs text-muted-foreground mt-1 truncate">{user.email}</p>
         </div>
       </div>
       <Button
         variant="ghost"
         size="sm"
+        className="shrink-0"
         onClick={() => signOut.mutate()}
         disabled={signOut.isPending}
       >
